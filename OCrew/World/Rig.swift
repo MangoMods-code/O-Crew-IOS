@@ -102,6 +102,7 @@ final class FirstPersonRig {
     private let leftHand: Hand
     private var reachStart: Double = -10
     private var sway = SIMD2<Float>(0, 0)
+    private var restRight = simd_quatf(angle: 0, axis: SIMD3<Float>(0, 1, 0))
 
     init(sleeve: UInt32, skin: UInt32) {
         let sleeveMat = SCNMaterial()
@@ -124,9 +125,10 @@ final class FirstPersonRig {
         let rWrist = SIMD3<Float>(0.22, -0.2, -0.46)
         Self.buildForearm(into: rightArm, elbow: rElbow, wrist: rWrist, sleeve: sleeveMat, cuff: cuff)
         rightHand.root.simdPosition = rWrist
-        rightHand.root.simdOrientation = simd_quatf(angle: 0.3, axis: SIMD3(0, 1, 0))
+        restRight = simd_quatf(angle: 0.3, axis: SIMD3(0, 1, 0))
             * simd_quatf(angle: -0.12, axis: SIMD3(1, 0, 0))
             * simd_quatf(angle: -0.25, axis: SIMD3(0, 0, 1))
+        rightHand.root.simdOrientation = restRight
         rightArm.addChildNode(rightHand.root)
         rightHand.pose(curl: 0, thumb: 0)
         rightArm.isHidden = true
@@ -154,9 +156,9 @@ final class FirstPersonRig {
                                      sleeve: SCNMaterial, cuff: SCNMaterial) {
         let dir = simd_normalize(wrist - elbow)
         // Long uniform sleeve right down to a glove cuff at the wrist.
-        arm.addChildNode(limb(from: elbow - dir * 0.15, to: elbow + (wrist - elbow) * 0.45, radius: 0.05, mat: sleeve))
-        arm.addChildNode(limb(from: elbow + (wrist - elbow) * 0.4, to: wrist - dir * 0.03, radius: 0.043, mat: sleeve))
-        arm.addChildNode(limb(from: wrist - dir * 0.035, to: wrist + dir * 0.005, radius: 0.036, mat: cuff))
+        arm.addChildNode(limb(from: elbow - dir * 0.15, to: elbow + (wrist - elbow) * 0.45, radius: 0.043, mat: sleeve))
+        arm.addChildNode(limb(from: elbow + (wrist - elbow) * 0.4, to: wrist - dir * 0.03, radius: 0.037, mat: sleeve))
+        arm.addChildNode(limb(from: wrist - dir * 0.035, to: wrist + dir * 0.005, radius: 0.032, mat: cuff))
     }
 
     /// A capsule from a to b.
@@ -192,14 +194,16 @@ final class FirstPersonRig {
 
         // Reach: the right hand sweeps up from below the screen, opens, grips, and drops away.
         let t = Float(now - reachStart)
-        let dur: Float = 0.32
+        let dur: Float = 0.26
         var e: Float = 0
         if t >= 0 && t < dur { e = sin(t / dur * .pi) }
         rightArm.isHidden = e <= 0.001
         if !rightArm.isHidden {
             let ease = e * e * (3 - 2 * e)
-            rightArm.simdPosition = SIMD3(-0.03 * ease, -0.3 * (1 - ease) + 0.03 * ease, -0.12 * ease)
-            rightArm.simdEulerAngles = SIMD3(0.12 * ease, 0.06 * ease, 0)
+            // A short, low scoop: rises just into view at the bottom right, dips the wrist, drops away.
+            rightArm.simdPosition = SIMD3(0.015 * ease, -0.3 * (1 - ease) - 0.07 * ease, -0.04 * ease)
+            rightArm.simdEulerAngles = SIMD3(-0.08 * ease, 0.04 * ease, 0)
+            rightHand.root.simdOrientation = restRight * simd_quatf(angle: -0.35 * ease, axis: SIMD3(1, 0, 0))
             let p = t / dur
             let grip: Float = p < 0.4 ? 0 : min(1, (p - 0.4) / 0.25)
             rightHand.pose(curl: 0.05 + grip * 0.85, thumb: grip * 0.9)

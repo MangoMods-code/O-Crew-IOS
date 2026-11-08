@@ -11,6 +11,8 @@ final class GameViewController: UIViewController {
 
     private var world: GameWorld!
     private let scnView = SCNView()
+    private var metalView: MetalSceneView?
+    private var frameCPU: CFTimeInterval = 0
     private let controls = ControlsView()
     private let hud = HUDView()
     private var displayLink: CADisplayLink?
@@ -43,17 +45,24 @@ final class GameViewController: UIViewController {
         world = GameWorld(level: level, save: ProgressStore.shared.save(for: level.id))
         ProductIcons.warm(level.products)
 
+        if !SettingsStore.shared.display.compatibleRenderer,
+           let mv = MetalSceneView(scene: world.scene, pointOfView: world.cameraNode) {
+            mv.frame = view.bounds
+            mv.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+            view.addSubview(mv)
+            metalView = mv
+        }
         scnView.frame = view.bounds
         scnView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
-        scnView.scene = world.scene
-        scnView.pointOfView = world.cameraNode
+        scnView.scene = metalView == nil ? world.scene : nil
+        if metalView == nil { scnView.pointOfView = world.cameraNode }
         scnView.backgroundColor = UIColor(hex: 0x9CC9EA)
         // Render at 2x instead of the phone's native 3x and with lighter anti-aliasing:
         // ~2.25x fewer pixels for the GPU, and the difference is hard to see on a phone.
         scnView.contentScaleFactor = min(2, UIScreen.main.scale)
         scnView.antialiasingMode = .multisampling2X
-        scnView.rendersContinuously = true
-        view.addSubview(scnView)
+        scnView.rendersContinuously = metalView == nil
+        if metalView == nil { view.addSubview(scnView) }
 
         controls.frame = view.bounds
         controls.autoresizingMask = [.flexibleWidth, .flexibleHeight]
@@ -112,13 +121,13 @@ final class GameViewController: UIViewController {
     private func configureFrameRate(_ link: CADisplayLink) {
         let fps = Float(SettingsStore.shared.display.frameRate.rawValue)
         link.preferredFrameRateRange = CAFrameRateRange(minimum: min(30, fps), maximum: fps, preferred: fps)
-        scnView.preferredFramesPerSecond = Int(fps)
+        if metalView == nil { scnView.preferredFramesPerSecond = Int(fps) }
     }
 
     private func applySettings(_ d: DisplaySettings) {
         hud.apply(d)
         controls.apply(d)
-        scnView.showsStatistics = d.perfStats
+        scnView.showsStatistics = d.perfStats && metalView == nil
         world?.refreshSigns()
         world?.refreshTags()
         if let link = displayLink { configureFrameRate(link) }
@@ -136,6 +145,11 @@ final class GameViewController: UIViewController {
     // MARK: Loop
 
     @objc private func tick(_ link: CADisplayLink) {
+        let cpuStart = CACurrentMediaTime()
+        defer {
+            metalView?.render(time: link.timestamp)
+            frameCPU = frameCPU * 0.9 + (CACurrentMediaTime() - cpuStart) * 0.1
+        }
         let now = link.timestamp
         let dt = lastTimestamp == 0 ? 1.0 / 60 : now - lastTimestamp
         lastTimestamp = now
@@ -181,13 +195,18 @@ final class GameViewController: UIViewController {
         fpsFrames += 1
         fpsTime += dt
         if fpsTime >= 0.5 {
-            hud.fpsLabel.text = "\(Int(Double(fpsFrames) / fpsTime)) FPS"
+            let showMs = SettingsStore.shared.display.perfStats
+            hud.fpsLabel.text = "\(Int(Double(fpsFrames) / fpsTime)) FPS" + (showMs ? String(format: " · %.1f ms CPU", frameCPU * 1000) : "")
             fpsFrames = 0
             fpsTime = 0
         }
     }
 
     private func hitTarget(at p: CGPoint) -> Target? {
+        if let mv = metalView {
+            let r = mv.ray(at: p)
+            return world.raycast(origin: r.0, dir: r.1)
+        }
         let a = scnView.unprojectPoint(SCNVector3(Float(p.x), Float(p.y), 0))
         let b = scnView.unprojectPoint(SCNVector3(Float(p.x), Float(p.y), 1))
         let o = SIMD3<Float>(a.x, a.y, a.z)

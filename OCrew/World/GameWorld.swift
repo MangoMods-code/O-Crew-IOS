@@ -387,6 +387,7 @@ final class GameWorld {
 
     private func buildScene() {
         let W = layout.width, D = layout.depth
+        scene.background.contents = UIColor(hex: 0x9CC9EA)
         let root = SCNNode()   // static geometry, merged into one mesh below
         let theme = level.theme
 
@@ -414,16 +415,25 @@ final class GameWorld {
         wall(-t, D, layout.doorMinX, D + t, H, 0)
         wall(layout.doorMaxX, D, W + t, D + t, H, 0)
         wall(layout.doorMinX, D, layout.doorMaxX, D + t, H - 2.4, 2.4)
-        // Closed glass doors
-        let glass = SCNNode(geometry: SCNBox(width: CGFloat(layout.doorMaxX - layout.doorMinX), height: 2.4, length: 0.05, chamferRadius: 0))
-        glass.geometry?.firstMaterial = Models.freshMat(0xBFE0F5, alpha: 0.35)
-        glass.position = SCNVector3((layout.doorMinX + layout.doorMaxX) / 2, 1.2, D + t / 2)
-        glass.categoryBitMask = Models.categoryNoHit
-        root.addChildNode(glass)
-        let closed = Models.billboardText("SORRY, WE'RE CLOSED", color: .white, bg: UIColor(hex: 0xB03A2E), width: 1.4, height: 0.24, fontSize: 52)
+        // Closed double doors: steel frames with frosted panels
+        let doorW = layout.doorMaxX - layout.doorMinX
+        let dcx = (layout.doorMinX + layout.doorMaxX) / 2
+        for side in [Float(-1), Float(1)] {
+            let cx = dcx + side * doorW / 4
+            let frame = Models.box(doorW / 2 - 0.02, 2.4, 0.06, 0x5D6D7E)
+            frame.position = SCNVector3(cx, 1.2, D + 0.03)
+            root.addChildNode(frame)
+            let pane = Models.box(doorW / 2 - 0.2, 1.9, 0.07, 0xDCE6EC)
+            pane.position = SCNVector3(cx, 1.3, D + 0.03)
+            root.addChildNode(pane)
+            let bar = Models.box(doorW / 2 - 0.3, 0.05, 0.1, 0xB0B7BD)
+            bar.position = SCNVector3(cx, 1.05, D - 0.03)
+            root.addChildNode(bar)
+        }
+        let closed = Models.billboardText("SORRY, WE'RE CLOSED", color: .white, bg: UIColor(hex: 0xB03A2E), width: 1.8, height: 0.24, fontSize: 40)
         closed.constraints = nil
         closed.eulerAngles.y = Float.pi
-        closed.position = SCNVector3((layout.doorMinX + layout.doorMaxX) / 2, 1.5, D - 0.02)
+        closed.position = SCNVector3(dcx, 1.7, D - 0.04)
         closed.geometry?.firstMaterial?.readsFromDepthBuffer = true
         scene.rootNode.addChildNode(closed)
 

@@ -339,7 +339,7 @@ final class HUDView: UIView {
         crosshair.isHidden = d.crosshair == .none
         timerLabel.isHidden = !d.showTimer
         remainingLabel.isHidden = !d.showRemaining
-        fpsLabel.isHidden = !d.showFPS
+        fpsLabel.isHidden = !(d.showFPS || d.perfStats)
         basketBar.scale = CGFloat(d.basketBarScale) * CGFloat(d.hudScale)
         basketBar.showCounts = d.basketCounts
         basketBar.colorblind = d.colorblind

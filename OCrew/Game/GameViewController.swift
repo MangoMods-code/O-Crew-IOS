@@ -142,11 +142,8 @@ final class GameViewController: UIViewController {
             world.look(dx: Float(look.x), dy: Float(look.y))
             world.update(dt: dt, move: controls.moveVector)
 
-            hitFrame += 1
-            if hitFrame % 3 == 0 {
-                focus = hitTarget(at: CGPoint(x: scnView.bounds.midX, y: scnView.bounds.midY))
-                world.setHighlight(focus)
-            }
+            focus = centerTarget()
+            world.setHighlight(focus)
             // Hold the hand button to keep grabbing / placing
             if interactHeld, SettingsStore.shared.display.holdToRepeat, let f = focus,
                world.time - interactHeldSince > 0.3, world.time - lastRepeat > 0.12 {
@@ -188,13 +185,16 @@ final class GameViewController: UIViewController {
     }
 
     private func hitTarget(at p: CGPoint) -> Target? {
-        let opts: [SCNHitTestOption: Any] = [
-            .searchMode: SCNHitTestSearchMode.closest.rawValue,
-            .categoryBitMask: Models.categoryWorld,
-            .ignoreHiddenNodes: false,   // hit boxes are hidden so they cost nothing to draw
-        ]
-        guard let hit = scnView.hitTest(p, options: opts).first else { return nil }
-        return world.target(for: hit.node, hitPoint: hit.simdWorldCoordinates)
+        let a = scnView.unprojectPoint(SCNVector3(Float(p.x), Float(p.y), 0))
+        let b = scnView.unprojectPoint(SCNVector3(Float(p.x), Float(p.y), 1))
+        let o = SIMD3<Float>(a.x, a.y, a.z)
+        return world.raycast(origin: o, dir: SIMD3<Float>(b.x, b.y, b.z) - o)
+    }
+
+    /// What the crosshair is on: a ray straight out of the camera.
+    private func centerTarget() -> Target? {
+        let cam = world.cameraNode
+        return world.raycast(origin: cam.simdWorldPosition, dir: cam.simdWorldFront)
     }
 
     // MARK: Input

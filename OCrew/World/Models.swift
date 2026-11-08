@@ -8,7 +8,6 @@ enum Models {
     static let categoryNoHit = 4
 
     private static var materialCache: [UInt32: SCNMaterial] = [:]
-    private static var productTemplates: [String: SCNNode] = [:]
     private static var labelImages: [String: UIImage] = [:]
     private static var tagImages: [String: UIImage] = [:]
 
@@ -71,20 +70,22 @@ enum Models {
     // MARK: Generated textures
 
     /// Packaging art: base color, accent band, a little logo blob and a white stripe.
+    /// Packaging art for UI icons (square crop of the front label).
     static func labelImage(for p: Product) -> UIImage {
         if let img = labelImages[p.id] { return img }
-        let size = CGSize(width: 64, height: 64)
-        let img = UIGraphicsImageRenderer(size: size).image { ctx in
-            let c = ctx.cgContext
-            UIColor(hex: p.color).setFill(); c.fill(CGRect(origin: .zero, size: size))
-            UIColor(hex: p.accent).setFill(); c.fill(CGRect(x: 0, y: 22, width: 64, height: 22))
-            UIColor.white.withAlphaComponent(0.85).setFill(); c.fill(CGRect(x: 0, y: 46, width: 64, height: 4))
-            UIColor(hex: p.color).setFill(); c.fillEllipse(in: CGRect(x: 22, y: 25, width: 20, height: 16))
-            UIColor.white.withAlphaComponent(0.7).setFill(); c.fillEllipse(in: CGRect(x: 27, y: 29, width: 10, height: 8))
-            UIColor.black.withAlphaComponent(0.25).setFill(); c.fill(CGRect(x: 6, y: 54, width: 30, height: 3))
+        let full = Packaging.front(p)
+        var out = full
+        if let cg = full.cgImage {
+            let w = cg.width, h = cg.height
+            let side = min(w / (w > h * 3 / 2 ? 2 : 1), h)
+            let x = (w > h * 3 / 2 ? w / 2 : w) / 2 - side / 2
+            let y = (h - side) / 2
+            if let crop = cg.cropping(to: CGRect(x: max(0, x), y: max(0, y), width: side, height: side)) {
+                out = UIImage(cgImage: crop, scale: full.scale, orientation: .up)
+            }
         }
-        labelImages[p.id] = img
-        return img
+        labelImages[p.id] = out
+        return out
     }
 
     static func checkerImage(_ a: UInt32, _ b: UInt32, grout: UInt32) -> UIImage {
@@ -150,68 +151,8 @@ enum Models {
 
     // MARK: Products
 
-    /// A single unit of a product, origin at bottom-center, front facing +z.
-    static func productTemplate(_ p: Product) -> SCNNode {
-        if let n = productTemplates[p.id] { return n }
-        let root = SCNNode()
-        let label = imageMat(labelImage(for: p))
-        let base = mat(p.color)
-        let accent = mat(p.accent)
-        switch p.shape {
-        case let .box(w, h, d):
-            let g = SCNBox(width: CGFloat(w), height: CGFloat(h), length: CGFloat(d), chamferRadius: 0)
-            g.materials = [label, base, label, base, base, base]
-            let n = SCNNode(geometry: g); n.position.y = h / 2; root.addChildNode(n)
-        case let .bag(w, h, d):
-            let g = SCNBox(width: CGFloat(w), height: CGFloat(h), length: CGFloat(d), chamferRadius: CGFloat(min(w, d) * 0.4))
-            g.chamferSegmentCount = 2
-            g.materials = [label, base, label, base, base, base]
-            let n = SCNNode(geometry: g); n.position.y = h / 2; root.addChildNode(n)
-        case let .carton(w, h, d):
-            let g = SCNBox(width: CGFloat(w), height: CGFloat(h), length: CGFloat(d), chamferRadius: 0)
-            g.materials = [label, base, label, base, base, base]
-            let n = SCNNode(geometry: g); n.position.y = h / 2; root.addChildNode(n)
-            let roof = SCNPyramid(width: CGFloat(w), height: 0.04, length: CGFloat(d))
-            roof.firstMaterial = base
-            let r = SCNNode(geometry: roof); r.position.y = h; root.addChildNode(r)
-        case let .can(r, h):
-            let g = SCNCylinder(radius: CGFloat(r), height: CGFloat(h))
-            g.radialSegmentCount = 12
-            g.materials = [label, accent, base]
-            let n = SCNNode(geometry: g); n.position.y = h / 2; root.addChildNode(n)
-        case let .jar(r, h):
-            let body = SCNCylinder(radius: CGFloat(r), height: CGFloat(h * 0.82))
-            body.radialSegmentCount = 12
-            body.materials = [label, base, base]
-            let b = SCNNode(geometry: body); b.position.y = h * 0.41; root.addChildNode(b)
-            let lid = SCNCylinder(radius: CGFloat(r * 1.04), height: CGFloat(h * 0.18))
-            lid.radialSegmentCount = 12
-            lid.firstMaterial = accent
-            let l = SCNNode(geometry: lid); l.position.y = h * 0.91; root.addChildNode(l)
-        case let .bottle(r, h):
-            let body = SCNCylinder(radius: CGFloat(r), height: CGFloat(h * 0.68))
-            body.radialSegmentCount = 14
-            body.materials = [label, base, base]
-            let b = SCNNode(geometry: body); b.position.y = h * 0.34; root.addChildNode(b)
-            let shoulder = SCNCone(topRadius: CGFloat(r * 0.42), bottomRadius: CGFloat(r), height: CGFloat(h * 0.14))
-            shoulder.radialSegmentCount = 14
-            shoulder.firstMaterial = base
-            let s = SCNNode(geometry: shoulder); s.position.y = h * 0.75; root.addChildNode(s)
-            let neck = SCNCylinder(radius: CGFloat(r * 0.42), height: CGFloat(h * 0.11))
-            neck.radialSegmentCount = 10
-            neck.firstMaterial = base
-            let nk = SCNNode(geometry: neck); nk.position.y = h * 0.875; root.addChildNode(nk)
-            let cap = SCNCylinder(radius: CGFloat(r * 0.48), height: CGFloat(h * 0.07))
-            cap.radialSegmentCount = 10
-            cap.firstMaterial = accent
-            let cp = SCNNode(geometry: cap); cp.position.y = h * 0.965; root.addChildNode(cp)
-        }
-        productTemplates[p.id] = root
-        return root
-    }
-
-    static func template(_ p: Product, expired: Bool) -> SCNNode {
-        expired ? expiredTemplate(p) : productTemplate(p)
+    static func template(_ p: Product, expired: Bool) -> ProductMesh {
+        ProductMesh.of(p, expired: expired)
     }
 
     static func translate(_ x: Float, _ y: Float, _ z: Float) -> simd_float4x4 {
@@ -225,7 +166,7 @@ enum Models {
     }
 
     static func productNode(_ p: Product, expired: Bool = false) -> SCNNode {
-        expired ? expiredTemplate(p).clone() : productTemplate(p).clone()
+        ProductMesh.of(p, expired: expired).node()
     }
 
     /// Merges a node tree into one mesh for speed. If SceneKit can't merge it, the original
@@ -236,34 +177,6 @@ enum Models {
         let hasSize = (mx.x - mn.x) + (mx.y - mn.y) + (mx.z - mn.z) > 0.001
         if let g = flat.geometry, !g.sources.isEmpty, !g.elements.isEmpty, hasSize { return flat }
         return container
-    }
-
-    private static var expiredTemplates: [String: SCNNode] = [:]
-
-    /// Same product, but faded/brown with a red "expired" sticker.
-    static func expiredTemplate(_ p: Product) -> SCNNode {
-        if let n = expiredTemplates[p.id] { return n }
-        let root = SCNNode()
-        let tint = UIColor(hex: 0x9C8B6E)
-        for child in productTemplate(p).childNodes {
-            guard let g = child.geometry?.copy() as? SCNGeometry else { continue }
-            g.materials = g.materials.map { m in
-                let c = (m.copy() as? SCNMaterial) ?? SCNMaterial()
-                c.multiply.contents = tint
-                return c
-            }
-            let n = SCNNode(geometry: g)
-            n.transform = child.transform
-            root.addChildNode(n)
-        }
-        let s = p.shape.size
-        let sticker = SCNNode(geometry: SCNBox(width: CGFloat(min(0.07, s.w * 0.6)), height: CGFloat(min(0.05, s.h * 0.4)),
-                                               length: 0.004, chamferRadius: 0))
-        sticker.geometry?.firstMaterial = emissive(0xE02424)
-        sticker.position = SCNVector3(0, s.h * 0.55, s.d / 2 + 0.003)
-        root.addChildNode(sticker)
-        expiredTemplates[p.id] = root
-        return root
     }
 
     // MARK: Store signage
@@ -326,53 +239,6 @@ enum Models {
     }
 
     // MARK: Cardboard box
-
-    static let boxSize = SIMD3<Float>(0.5, 0.32, 0.4)
-
-    static func cardboardBox(for p: Product) -> SCNNode {
-        let s = boxSize
-        let g = SCNBox(width: CGFloat(s.x), height: CGFloat(s.y), length: CGFloat(s.z), chamferRadius: 0.01)
-        let card = mat(0xC49A6C)
-        let side = imageMat(cardboardSide(for: p))
-        let top = imageMat(cardboardTop())
-        g.materials = [side, side, side, side, top, card]
-        let n = SCNNode(geometry: g)
-        n.position.y = s.y / 2
-        let root = SCNNode()
-        root.addChildNode(n)
-        return root
-    }
-
-    private static var cardboardSides: [String: UIImage] = [:]
-    private static var cardboardTopImage: UIImage?
-
-    private static func cardboardSide(for p: Product) -> UIImage {
-        if let i = cardboardSides[p.id] { return i }
-        let size = CGSize(width: 128, height: 80)
-        let label = labelImage(for: p)
-        let img = UIGraphicsImageRenderer(size: size).image { ctx in
-            UIColor(hex: 0xC49A6C).setFill(); ctx.cgContext.fill(CGRect(origin: .zero, size: size))
-            UIColor(hex: 0xB0855A).setFill(); ctx.cgContext.fill(CGRect(x: 0, y: 0, width: 128, height: 6))
-            label.draw(in: CGRect(x: 40, y: 18, width: 48, height: 48))
-            UIColor(hex: 0x6B4F33).setStroke()
-            ctx.cgContext.setLineWidth(2)
-            ctx.cgContext.stroke(CGRect(x: 39, y: 17, width: 50, height: 50))
-        }
-        cardboardSides[p.id] = img
-        return img
-    }
-
-    private static func cardboardTop() -> UIImage {
-        if let i = cardboardTopImage { return i }
-        let size = CGSize(width: 128, height: 128)
-        let img = UIGraphicsImageRenderer(size: size).image { ctx in
-            UIColor(hex: 0xC9A06F).setFill(); ctx.cgContext.fill(CGRect(origin: .zero, size: size))
-            UIColor(hex: 0xD9C7A3).setFill(); ctx.cgContext.fill(CGRect(x: 0, y: 54, width: 128, height: 20))
-            UIColor(hex: 0x9C7A52).setFill(); ctx.cgContext.fill(CGRect(x: 0, y: 63, width: 128, height: 2))
-        }
-        cardboardTopImage = img
-        return img
-    }
 
     // MARK: Floating text (popups, signs)
 

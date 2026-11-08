@@ -53,7 +53,6 @@ final class GameWorld {
     var binned = 0
     var total = 0
     var nextItemID = 1
-    let hitRoot = SCNNode()
     var chunks: [Int: FloorChunk] = [:]
     var chunksDirty = false
     var lastFOV: Double = 0
@@ -223,17 +222,9 @@ final class GameWorld {
     func placeOnFloor(_ it: Item, at p: SIMD2<Float>, yaw: Float, tipped: Bool) {
         guard let prod = Catalog.product(it.product) else { return }
         let s = prod.shape.size
-        let root = SCNNode()
-        root.name = "item:\(it.id)"
         let bw = max(0.2, tipped ? s.h : s.w), bh = max(0.18, tipped ? s.w : s.h), bd = max(0.2, s.d)
-        let hit = SCNNode(geometry: SCNBox(width: CGFloat(bw), height: CGFloat(bh), length: CGFloat(bd), chamferRadius: 0))
-        hit.position = SCNVector3(tipped ? -s.h / 2 : 0, bh / 2, 0)
-        hit.isHidden = true
-        root.addChildNode(hit)
-        root.simdPosition = SIMD3(p.x, 0, p.y)
-        root.simdEulerAngles = SIMD3(0, yaw, 0)
-        hitRoot.addChildNode(root)
-        it.node = root
+        it.hitHalf = SIMD3(bw / 2, bh / 2, bd / 2)
+        it.hitCenter = SIMD3(tipped ? -s.h / 2 : 0, bh / 2, 0)
         it.floorPos = p
         it.yaw = yaw
         it.tipped = tipped
@@ -519,7 +510,6 @@ final class GameWorld {
         rig = arms
         worldRoot.addChildNode(playerNode)
         worldRoot.addChildNode(highlightNode)
-        worldRoot.addChildNode(hitRoot)
     }
 
     // MARK: Per-frame
@@ -615,59 +605,6 @@ final class GameWorld {
     // MARK: Focus
 
     var cameraWorldPosition: SIMD3<Float> { cameraNode.simdWorldPosition }
-
-    func target(for node: SCNNode, hitPoint: SIMD3<Float>) -> Target? {
-        var n: SCNNode? = node
-        while let cur = n {
-            if let name = cur.name, let t = parseTarget(name) {
-                let dist = simd_distance(hitPoint, cameraWorldPosition)
-                switch t {
-                case .item: return dist <= Float(game.pickupReach) ? t : nil
-                default: return dist <= 2.7 ? t : nil
-                }
-            }
-            n = cur.parent
-        }
-        return nil
-    }
-
-    private func parseTarget(_ name: String) -> Target? {
-        let parts = name.split(separator: ":").map { String($0) }
-        switch parts.first ?? "" {
-        case "item": if parts.count == 2, let i = Int(parts[1]), floorItems[i] != nil { return .item(i) }
-        case "slot": if parts.count == 3, let f = Int(parts[1]), let s = Int(parts[2]) { return .slot(f, s) }
-        case "bin": return .bin
-        default: break
-        }
-        return nil
-    }
-
-    func node(for t: Target) -> SCNNode? {
-        switch t {
-        case let .item(id): return floorItems[id]?.node
-        case let .slot(f, s): return fixtures[safe: f]?.slots[safe: s]?.hitNode
-        case .bin: return scene.rootNode.childNode(withName: "bin", recursively: false)
-        }
-    }
-
-    func setHighlight(_ t: Target?) {
-        guard display.highlightFocused, let t = t, let n = node(for: t) else {
-            highlightNode.isHidden = true
-            return
-        }
-        var (mn, mx) = n.boundingBox
-        if case .bin = t { mn.y = 0; mx.y = 0.9 }
-        let center = SIMD3<Float>((mn.x + mx.x) / 2, (mn.y + mx.y) / 2, (mn.z + mx.z) / 2)
-        let size = SIMD3<Float>(mx.x - mn.x, mx.y - mn.y, mx.z - mn.z) * 1.06 + 0.01
-        var m = matrix_identity_float4x4
-        m.columns.3 = SIMD4(center, 1)
-        var sc = matrix_identity_float4x4
-        sc.columns.0.x = size.x; sc.columns.1.y = size.y; sc.columns.2.z = size.z
-        highlightNode.simdTransform = n.simdWorldTransform * m * sc
-        let pulse = 0.12 + 0.06 * sin(time * 5)
-        highlightNode.geometry?.firstMaterial?.diffuse.contents = UIColor(white: 1, alpha: CGFloat(pulse))
-        highlightNode.isHidden = false
-    }
 
     // MARK: Helpers
 

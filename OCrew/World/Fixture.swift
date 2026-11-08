@@ -9,6 +9,9 @@ final class Item {
     var node: SCNNode?          // only while lying on the floor
     var floorPos = SIMD2<Float>(0, 0)
     var chunk = 0
+    /// Tap box in the item's local space (before yaw): center and half size.
+    var hitCenter = SIMD3<Float>(0, 0.1, 0)
+    var hitHalf = SIMD3<Float>(0.1, 0.1, 0.1)
     var yaw: Float = 0
     var tipped = false
 
@@ -38,6 +41,9 @@ final class Slot {
     let tagNode: SCNNode
     let hitNode: SCNNode
     var worldCenter: SIMD3<Float> = .zero
+    /// World-space tap box (fixtures are axis-aligned).
+    var boxMin = SIMD3<Float>(0, 0, 0)
+    var boxMax = SIMD3<Float>(0, 0, 0)
 
     init(fixture: Int, index: Int, row: Int, depth: Float) {
         let w: Float = 0.98, h: Float = 0.5
@@ -151,6 +157,8 @@ final class Fixture {
     let node: SCNNode
     var slots: [Slot] = []
     var rowCategories: [String?] = [nil, nil, nil]
+    /// Solid panels that block taps (back + ends), world-space boxes.
+    var occluders: [(SIMD3<Float>, SIMD3<Float>)] = []
     private var rowLabelNodes: [SCNNode] = []
     private let signNode = SCNNode()
 
@@ -192,11 +200,28 @@ final class Fixture {
 
         let yaw = atan2(spec.normal.x, spec.normal.y)
         let right = SIMD2<Float>(cos(yaw), -sin(yaw))
+        // World boxes: rotate a local (x along shelf, z toward aisle) box into world space.
+        func worldBox(_ c: SIMD3<Float>, _ half: SIMD3<Float>) -> (SIMD3<Float>, SIMD3<Float>) {
+            let p = spec.center + right * c.x + spec.normal * c.z
+            let alongX = abs(right.x) > 0.5
+            let hx = alongX ? half.x : half.z, hz = alongX ? half.z : half.x
+            return (SIMD3(p.x - hx, c.y - half.y, p.y - hz), SIMD3(p.x + hx, c.y + half.y, p.y + hz))
+        }
         for slot in slots {
             let base = spec.center + right * slot.node.position.x
             let front = base + spec.normal * (spec.depth / 2 - 0.2)
             slot.worldCenter = SIMD3(front.x, slot.node.position.y + 0.2, front.y)
+            let sd = slot.depth
+            let c = SIMD3<Float>(slot.node.position.x, slot.node.position.y + 0.24, spec.depth / 2 - 0.01 - sd / 2)
+            let b = worldBox(c, SIMD3(0.47, 0.23, sd / 2))
+            slot.boxMin = b.0
+            slot.boxMax = b.1
         }
+        let H = spec.height, L = spec.length, D = spec.depth
+        occluders.append(worldBox(SIMD3(0, H / 2, -D / 2 + 0.03), SIMD3(L / 2, H / 2, 0.03)))
+        occluders.append(worldBox(SIMD3(-L / 2 + 0.02, H / 2, 0), SIMD3(0.02, H / 2, D / 2)))
+        occluders.append(worldBox(SIMD3(L / 2 - 0.02, H / 2, 0), SIMD3(0.02, H / 2, D / 2)))
+        occluders.append(worldBox(SIMD3(0, 0.05, 0), SIMD3(L / 2, 0.05, D / 2)))
     }
 
     func setRows(_ cats: [String?], showLabels: Bool, signScale: Float) {

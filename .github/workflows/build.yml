@@ -1,0 +1,75 @@
+name: Build IPA
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: macos-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install XcodeGen
+        run: |
+          curl -sSL -o xcodegen.zip https://github.com/yonaskolb/XcodeGen/releases/latest/download/xcodegen.zip
+          unzip -q xcodegen.zip -d xcodegen-dist
+          echo "$PWD/xcodegen-dist/xcodegen/bin" >> "$GITHUB_PATH"
+
+      - name: Generate Xcode project
+        run: xcodegen generate
+
+      - name: Build (unsigned)
+        run: |
+          set -o pipefail
+          xcodebuild -version
+          xcodebuild \
+            -project OCrew.xcodeproj \
+            -target OCrew \
+            -configuration Release \
+            -sdk iphoneos \
+            SYMROOT="$PWD/build" \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
+            build 2>&1 | tee build.log | grep -E "error:|warning: unre|BUILD (SUCCEEDED|FAILED)" || true
+          test -d build/Release-iphoneos/OCrew.app || { echo "::group::Errors"; grep -E "error:" build.log | sort -u | head -100; echo "::endgroup::"; exit 1; }
+
+      - name: Upload build log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log
+          path: build.log
+          retention-days: 7
+
+      - name: Package IPA
+        run: |
+          mkdir -p Payload
+          cp -R build/Release-iphoneos/OCrew.app Payload/
+          zip -qry O-Crew.ipa Payload
+          ls -lh O-Crew.ipa
+
+      - name: Upload IPA artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: O-Crew-ipa
+          path: O-Crew.ipa
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: build-${{ github.run_number }}
+          name: O-Crew build ${{ github.run_number }}
+          body: |
+            Unsigned build from ${{ github.sha }}.
+            Download **O-Crew.ipa** below, then sign and install it with your usual tool (Sideloadly, AltStore, etc.).
+          files: O-Crew.ipa
+          make_latest: true

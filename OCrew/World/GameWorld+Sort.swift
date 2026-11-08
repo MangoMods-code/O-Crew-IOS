@@ -44,6 +44,12 @@ extension GameWorld {
     func updateBasketVisual() {
         basketNode.childNodes.forEach { $0.removeFromParentNode() }
         let b = SCNNode()
+        b.position.y = -0.26
+        let handle = SCNNode(geometry: SCNTorus(ringRadius: 0.17, pipeRadius: 0.009))
+        handle.geometry?.firstMaterial = Models.mat(0x9E1B1B)
+        handle.eulerAngles.x = Float.pi / 2
+        handle.position.y = 0.2
+        b.addChildNode(handle)
         let body = SCNNode(geometry: SCNBox(width: 0.42, height: 0.2, length: 0.3, chamferRadius: 0.025))
         body.geometry?.firstMaterial = Models.mat(0xD62828)
         body.position.y = 0.1
@@ -97,6 +103,7 @@ extension GameWorld {
             Feedback.shared.play(.bonk, volume: 0.6)
             return
         }
+        rig?.reach(now: time)
         flyFromFloor(it, to: cameraWorldPosition + SIMD3(0, -0.4, 0), duration: 0.16)
         removeFromFloor(it)
         basket.append(it)
@@ -149,6 +156,7 @@ extension GameWorld {
             }
         }
 
+        rig?.reach(now: time)
         basket.removeAll { $0 === it }
         slot.items.append(it)
         slot.rebuild()
@@ -183,6 +191,7 @@ extension GameWorld {
             return
         }
         guard let it = slot.items.popLast() else { return }
+        rig?.reach(now: time)
         slot.rebuild()
         slot.refreshTag(visible: display.showShelfTags)
         basket.append(it)

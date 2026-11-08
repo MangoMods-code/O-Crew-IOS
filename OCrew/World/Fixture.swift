@@ -114,7 +114,7 @@ final class Slot {
             unit.position = SCNVector3(x, Float(layer) * (s.h + 0.004) + 0.002, z)
             container.addChildNode(unit)
         }
-        let flat = container.flattenedClone()
+        let flat = Models.merged(container)
         node.addChildNode(flat)
         contentNode = flat
     }
@@ -249,7 +249,7 @@ final class Fixture {
             add(strip, 0, H - 0.08, D / 2 - 0.05)
         }
         // One merged mesh for the whole frame.
-        node.addChildNode(frame.flattenedClone())
+        node.addChildNode(Models.merged(frame))
         if isCold {
             // Glass stays separate so it never blocks taps on the shelves behind it.
             let glass = SCNNode(geometry: SCNBox(width: CGFloat(L - 0.06), height: CGFloat(H - 0.16), length: 0.015, chamferRadius: 0))

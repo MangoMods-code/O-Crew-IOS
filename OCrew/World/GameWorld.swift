@@ -57,6 +57,9 @@ final class GameWorld {
     var chunks: [Int: FloorChunk] = [:]
     var chunksDirty = false
     var lastFOV: Double = 0
+    var rig: FirstPersonRig?
+    var lookDelta = SIMD2<Float>(0, 0)
+    var lastStep = 0
 
     // MARK: Progress
     var elapsed: Double = 0
@@ -282,7 +285,7 @@ final class GameWorld {
                 holder.addChildNode(m)
                 container.addChildNode(holder)
             }
-            let flat = container.flattenedClone()
+            let flat = Models.merged(container)
             Models.setCategory(flat, Models.categoryNoHit)
             scene.rootNode.addChildNode(flat)
             c.visual = flat
@@ -439,7 +442,7 @@ final class GameWorld {
             lx += 3
         }
 
-        let env = root.flattenedClone()
+        let env = Models.merged(root)
         Models.setCategory(env, Models.categoryNoHit)
         scene.rootNode.addChildNode(env)
         let worldRoot = scene.rootNode
@@ -494,9 +497,11 @@ final class GameWorld {
         cameraNode.camera = cam
         cameraNode.position = SCNVector3(0, eyeHeight, 0)
         playerNode.addChildNode(cameraNode)
-        basketNode.position = SCNVector3(0.36, -0.52, -0.8)
-        basketNode.eulerAngles = SCNVector3(Float(0.25), Float(-0.25), Float(0))
-        cameraNode.addChildNode(basketNode)
+        let arms = FirstPersonRig(sleeve: theme.trim, skin: 0xE0AC69)
+        arms.basketHolder.addChildNode(basketNode)
+        basketNode.scale = SCNVector3(0.8, 0.8, 0.8)
+        cameraNode.addChildNode(arms.root)
+        rig = arms
         worldRoot.addChildNode(playerNode)
         worldRoot.addChildNode(highlightNode)
         worldRoot.addChildNode(hitRoot)
@@ -507,6 +512,7 @@ final class GameWorld {
     func look(dx: Float, dy: Float) {
         let s = Float(display.lookSensitivity) * 0.0055
         let sy = s * Float(display.lookSensitivityY) * (display.invertY ? -1 : 1)
+        lookDelta = SIMD2(dx, dy)
         targetYaw -= dx * s
         targetPitch = max(-1.35, min(1.35, targetPitch - dy * sy))
     }
@@ -545,9 +551,23 @@ final class GameWorld {
 
         let moving = simd_length(mv) > 0.08
         if moving { bobPhase += dt * speed * 3.4 }
-        let bob: Float = (d.headBob && !d.reduceMotion && moving) ? sin(bobPhase) * 0.032 * min(1, simd_length(mv)) : 0
-        cameraNode.simdPosition = SIMD3(0, eyeHeight + bob, 0)
-        cameraNode.simdEulerAngles = SIMD3(pitch, 0, 0)
+        let amount = min(1, simd_length(mv))
+        let bob: Float = (d.headBob && !d.reduceMotion && moving) ? abs(sin(bobPhase)) * 0.045 * amount - 0.02 * amount : 0
+        let sideBob: Float = (d.headBob && !d.reduceMotion && moving) ? sin(bobPhase) * 0.018 * amount : 0
+        cameraNode.simdPosition = SIMD3(sideBob, eyeHeight + bob, 0)
+        let roll: Float = (d.headBob && !d.reduceMotion) ? -mv.x * 0.018 - sin(bobPhase) * 0.006 * amount : 0
+        cameraNode.simdEulerAngles = SIMD3(pitch, 0, roll)
+        // Footsteps on each step of the walk cycle.
+        let step = Int(bobPhase / Float.pi)
+        if step != lastStep {
+            lastStep = step
+            if moving && d.footsteps { Feedback.shared.play(.step, volume: 0.35 + 0.25 * amount) }
+        }
+        if let rig = rig {
+            rig.root.isHidden = !d.showArms
+            rig.update(dt: dt, now: time, move: moving ? amount : 0, bobPhase: bobPhase, lookDelta: lookDelta, reduceMotion: d.reduceMotion)
+        }
+        lookDelta = .zero
         if d.fieldOfView != lastFOV {
             lastFOV = d.fieldOfView
             cameraNode.camera?.fieldOfView = CGFloat(d.fieldOfView)

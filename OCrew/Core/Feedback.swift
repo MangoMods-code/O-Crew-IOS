@@ -2,7 +2,7 @@ import AVFoundation
 import UIKit
 
 enum Sound: String, CaseIterable {
-    case place, pickup, chime, error, skill, fanfare, ding, bonk, pop, magnet, toss, complete
+    case place, pickup, chime, error, skill, fanfare, ding, bonk, pop, magnet, toss, complete, step
 }
 
 /// Sound effects + haptics, respecting the player's settings.

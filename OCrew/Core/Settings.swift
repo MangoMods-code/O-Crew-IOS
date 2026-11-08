@@ -110,7 +110,8 @@ struct DisplaySettings: Codable, Equatable {
     var invertY = false
     var headBob = true
     var cameraSmoothing: Double = 0.0
-    var frameRate: FrameRateCap = .fps60
+    var frameRate: FrameRateCap = .fps120
+    var showArms = true
     // Accessibility
     var colorblind: ColorblindMode = .off
     var reduceMotion = false
@@ -118,6 +119,7 @@ struct DisplaySettings: Codable, Equatable {
     var haptics = true
     // Audio
     var sfxVolume: Double = 0.8
+    var footsteps = true
 }
 
 // MARK: - Game rules
@@ -165,7 +167,7 @@ final class SettingsStore: ObservableObject {
     @Published var display: DisplaySettings { didSet { save(display, key: Self.displayKey) } }
     @Published var game: GameSettings { didSet { save(game, key: Self.gameKey) } }
 
-    private static let displayKey = "ocrew.display.v3"
+    private static let displayKey = "ocrew.display.v4"
     private static let gameKey = "ocrew.game.v3"
 
     private init() {

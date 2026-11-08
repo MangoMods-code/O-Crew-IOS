@@ -209,15 +209,18 @@ enum Models {
         return root
     }
 
-    private static var flatTemplates: [String: SCNNode] = [:]
-
-    /// One merged node per product unit (much cheaper to draw than the multi-part template).
     static func productNode(_ p: Product, expired: Bool = false) -> SCNNode {
-        let key = (expired ? "x:" : "") + p.id
-        if let n = flatTemplates[key] { return n.clone() }
-        let flat = (expired ? expiredTemplate(p) : productTemplate(p)).flattenedClone()
-        flatTemplates[key] = flat
-        return flat.clone()
+        expired ? expiredTemplate(p).clone() : productTemplate(p).clone()
+    }
+
+    /// Merges a node tree into one mesh for speed. If SceneKit can't merge it, the original
+    /// tree is returned so nothing ever goes invisible.
+    static func merged(_ container: SCNNode) -> SCNNode {
+        let flat = container.flattenedClone()
+        let (mn, mx) = flat.boundingBox
+        let hasSize = (mx.x - mn.x) + (mx.y - mn.y) + (mx.z - mn.z) > 0.001
+        if let g = flat.geometry, !g.sources.isEmpty, !g.elements.isEmpty, hasSize { return flat }
+        return container
     }
 
     private static var expiredTemplates: [String: SCNNode] = [:]

@@ -71,7 +71,7 @@ final class RoundButton: UIControl {
 final class CrosshairView: UIView {
     var style: CrosshairStyle = .dot { didSet { setNeedsDisplay() } }
     var color: UIColor = .white { didSet { setNeedsDisplay() } }
-    var focused = false { didSet { if focused != oldValue { setNeedsDisplay() } } }
+    var isTargeting = false { didSet { if isTargeting != oldValue { setNeedsDisplay() } } }
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -87,7 +87,7 @@ final class CrosshairView: UIView {
         let s = bounds.width / 2
         c.setShadow(offset: .zero, blur: 2, color: UIColor.black.withAlphaComponent(0.8).cgColor)
         color.setFill(); color.setStroke()
-        let grow: CGFloat = focused ? 1.35 : 1
+        let grow: CGFloat = isTargeting ? 1.35 : 1
         switch style {
         case .dot:
             let r = s * 0.22 * grow

@@ -182,7 +182,7 @@ final class GameViewController: UIViewController {
                       rating: world.rating, clock: world.clockString(), phase: world.phase)
         hud.setPrompt(world.prompt(for: focus))
         hud.setTip(world.tutorialText)
-        hud.crosshair.focused = focus != nil
+        hud.crosshair.isTargeting = focus != nil
         let mul = world.skillMultiplier
         for (id, b) in hud.skillButtons {
             let frac = world.skills.cooldownFraction(id, now: world.time, multiplier: mul)

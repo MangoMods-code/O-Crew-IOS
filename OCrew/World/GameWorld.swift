@@ -624,7 +624,7 @@ final class GameWorld {
         }
         if let rig = rig {
             rig.root.isHidden = !d.showArms
-            rig.update(dt: dt, now: time, move: moving ? amount : 0, bobPhase: bobPhase, lookDelta: lookDelta, reduceMotion: d.reduceMotion)
+            rig.update(dt: dt, now: time, move: moving ? amount : 0, bobPhase: bobPhase, lookDelta: lookDelta, pitch: pitch, reduceMotion: d.reduceMotion)
         }
         lookDelta = .zero
         if d.fieldOfView != lastFOV {

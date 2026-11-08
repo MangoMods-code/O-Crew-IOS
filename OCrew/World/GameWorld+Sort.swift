@@ -44,7 +44,7 @@ extension GameWorld {
     func updateBasketVisual() {
         basketNode.childNodes.forEach { $0.removeFromParentNode() }
         let b = SCNNode()
-        b.position.y = -0.26
+        b.position.y = -0.37   // top of the handle arc sits exactly in the fist
         let handle = SCNNode(geometry: SCNTorus(ringRadius: 0.17, pipeRadius: 0.009))
         handle.geometry?.firstMaterial = Models.mat(0x9E1B1B)
         handle.eulerAngles.x = Float.pi / 2

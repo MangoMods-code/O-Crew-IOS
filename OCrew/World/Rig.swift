@@ -134,19 +134,22 @@ final class FirstPersonRig {
         rightArm.isHidden = true
         root.addChildNode(rightArm)
 
-        // ---- Left arm: gloved fist on the basket handle, tucked into the bottom-left corner.
-        let lElbow = SIMD3<Float>(-0.46, -0.48, -0.08)
-        let lWrist = SIMD3<Float>(-0.34, -0.29, -0.45)
+        // ---- Left arm: carrying the basket like a real one. Palm down over the handle, fingers
+        // wrapped around it, knuckles forward; the handle runs sideways through the fist.
+        let lElbow = SIMD3<Float>(-0.42, -0.52, -0.1)
+        let lWrist = SIMD3<Float>(-0.3, -0.3, -0.44)
         Self.buildForearm(into: leftArm, elbow: lElbow, wrist: lWrist, sleeve: sleeveMat, cuff: cuff)
+        let handRot = simd_quatf(angle: -0.18, axis: SIMD3(0, 1, 0))     // fingers point slightly inward
+            * simd_quatf(angle: -0.55, axis: SIMD3(1, 0, 0))             // wrist bent forward/down
         leftHand.root.simdPosition = lWrist
-        leftHand.root.simdOrientation = simd_quatf(angle: -0.25, axis: SIMD3(0, 1, 0))
-            * simd_quatf(angle: 1.3, axis: SIMD3(0, 0, 1))
-            * simd_quatf(angle: -0.15, axis: SIMD3(1, 0, 0))
-        leftHand.pose(curl: 1.0, thumb: 0.85)
+        leftHand.root.simdOrientation = handRot
+        leftHand.pose(curl: 1.05, thumb: 1.0)
         leftArm.addChildNode(leftHand.root)
-        basketHolder.simdPosition = lWrist + SIMD3(0.012, -0.04, -0.065)
+        // The handle sits under the palm where the fingers close; the basket hangs level below it.
+        basketHolder.simdPosition = SIMD3(0, -0.03, -0.075)
+        basketHolder.simdOrientation = handRot.inverse
         basketHolder.scale = SCNVector3(0.72, 0.72, 0.72)
-        leftArm.addChildNode(basketHolder)
+        leftHand.root.addChildNode(basketHolder)
         root.addChildNode(leftArm)
 
         Models.setCategory(root, 2)
@@ -178,7 +181,7 @@ final class FirstPersonRig {
     /// Plays the reach-and-grab motion.
     func reach(now: Double) { reachStart = now }
 
-    func update(dt: Float, now: Double, move: Float, bobPhase: Float, lookDelta: SIMD2<Float>, reduceMotion: Bool) {
+    func update(dt: Float, now: Double, move: Float, bobPhase: Float, lookDelta: SIMD2<Float>, pitch: Float, reduceMotion: Bool) {
         // Sway: the arms lag a little behind fast looks.
         let target = reduceMotion ? SIMD2<Float>(0, 0) : SIMD2(max(-1, min(1, -lookDelta.x * 0.004)), max(-1, min(1, lookDelta.y * 0.004)))
         sway += (target - sway) * min(1, dt * 10)
@@ -187,7 +190,9 @@ final class FirstPersonRig {
         let bobY = -abs(sin(bobPhase)) * 0.02 * walk
         let breathe: Float = reduceMotion ? 0 : sin(Float(now) * 1.7) * 0.0035
         root.simdPosition = SIMD3(bobX + sway.x * 0.05, bobY + breathe + sway.y * 0.04, 0)
-        root.simdEulerAngles = SIMD3(sway.y * 0.06, sway.x * 0.08, -bobX * 1.1)
+        // Arms belong to the body, not the eyes: they only partly follow when you look up/down,
+        // so looking down brings the basket into view and looking ahead keeps it low.
+        root.simdEulerAngles = SIMD3(sway.y * 0.06 - pitch * 0.45, sway.x * 0.08, -bobX * 1.1)
 
         // Arms swing a little with each step, opposite to each other.
         leftArm.simdEulerAngles = SIMD3(sin(bobPhase * 2) * 0.025 * walk, 0, sin(bobPhase) * 0.02 * walk)

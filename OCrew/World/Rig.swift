@@ -12,12 +12,12 @@ final class Hand {
     private(set) var thumbJoints: [SCNNode] = []
     private let mirrored: Bool
 
-    init(skin: SCNMaterial, mirrored: Bool) {
+    init(skin: SCNMaterial, mirrored: Bool, thickness: Float = 1.18) {
         self.mirrored = mirrored
         let sx: Float = mirrored ? -1 : 1
 
         // Palm: a rounded slab, slightly wider at the knuckles.
-        let palm = SCNNode(geometry: SCNBox(width: 0.078, height: 0.026, length: 0.088, chamferRadius: 0.012))
+        let palm = SCNNode(geometry: SCNBox(width: 0.084, height: 0.032, length: 0.09, chamferRadius: 0.015))
         palm.geometry?.firstMaterial = skin
         palm.position = SCNVector3(0, 0, -0.045)
         root.addChildNode(palm)
@@ -40,7 +40,7 @@ final class Hand {
                 let pivot = SCNNode()
                 pivot.position = SCNVector3(j == 0 ? xs[i] * sx : 0, 0, j == 0 ? z : -lengths[i][j - 1])
                 if j == 0 { pivot.eulerAngles.y = -xs[i] * sx * 1.6 }   // slight natural spread
-                let r = radii[i] * (1 - Float(j) * 0.08)
+                let r = radii[i] * thickness * (1 - Float(j) * 0.06)
                 let seg = SCNNode(geometry: SCNCapsule(capRadius: CGFloat(r), height: CGFloat(lengths[i][j] + r * 2)))
                 seg.geometry?.firstMaterial = skin
                 seg.eulerAngles.x = -Float.pi / 2
@@ -107,45 +107,43 @@ final class FirstPersonRig {
         let sleeveMat = SCNMaterial()
         sleeveMat.diffuse.contents = UIColor(hex: sleeve)
         sleeveMat.lightingModel = .lambert
-        let cuffMat = SCNMaterial()
-        cuffMat.diffuse.contents = UIColor(hex: sleeve).withAlphaComponent(1)
-        cuffMat.multiply.contents = UIColor(white: 0.78, alpha: 1)
-        cuffMat.lightingModel = .lambert
-        let skinMat = SCNMaterial()
-        skinMat.diffuse.contents = UIColor(hex: 0xE8B38A)
-        skinMat.specular.contents = UIColor(white: 0.18, alpha: 1)
-        skinMat.shininess = 0.25
-        skinMat.lightingModel = .blinn
+        let glove = SCNMaterial()
+        glove.diffuse.contents = UIColor(hex: 0x2E3B48)
+        glove.specular.contents = UIColor(white: 0.22, alpha: 1)
+        glove.shininess = 0.3
+        glove.lightingModel = .blinn
+        let cuff = SCNMaterial()
+        cuff.diffuse.contents = UIColor(hex: Theme.brand)
+        cuff.lightingModel = .lambert
 
-        rightHand = Hand(skin: skinMat, mirrored: false)
-        leftHand = Hand(skin: skinMat, mirrored: true)
+        rightHand = Hand(skin: glove, mirrored: false)
+        leftHand = Hand(skin: glove, mirrored: true)
 
-        // ---- Right arm: forearm angled in from the lower right, hand relaxed, palm down.
-        let rElbow = SIMD3<Float>(0.4, -0.42, -0.1)
-        let rWrist = SIMD3<Float>(0.23, -0.2, -0.47)
-        Self.buildForearm(into: rightArm, elbow: rElbow, wrist: rWrist, sleeve: sleeveMat, cuff: cuffMat, skin: skinMat)
+        // ---- Right arm: lives just below the screen and sweeps up to grab/place.
+        let rElbow = SIMD3<Float>(0.4, -0.44, -0.08)
+        let rWrist = SIMD3<Float>(0.22, -0.2, -0.46)
+        Self.buildForearm(into: rightArm, elbow: rElbow, wrist: rWrist, sleeve: sleeveMat, cuff: cuff)
         rightHand.root.simdPosition = rWrist
-        rightHand.root.simdOrientation = simd_quatf(angle: 0.32, axis: SIMD3(0, 1, 0))
-            * simd_quatf(angle: -0.18, axis: SIMD3(1, 0, 0))
-            * simd_quatf(angle: -0.42, axis: SIMD3(0, 0, 1))
-        rightHand.root.scale = SCNVector3(0.95, 0.95, 0.95)
+        rightHand.root.simdOrientation = simd_quatf(angle: 0.3, axis: SIMD3(0, 1, 0))
+            * simd_quatf(angle: -0.12, axis: SIMD3(1, 0, 0))
+            * simd_quatf(angle: -0.25, axis: SIMD3(0, 0, 1))
         rightArm.addChildNode(rightHand.root)
-        rightHand.pose(curl: 0.12, thumb: 0.1)
+        rightHand.pose(curl: 0, thumb: 0)
+        rightArm.isHidden = true
         root.addChildNode(rightArm)
 
-        // ---- Left arm: fist gripping the basket handle (palm facing in).
-        let lElbow = SIMD3<Float>(-0.44, -0.44, -0.1)
-        let lWrist = SIMD3<Float>(-0.29, -0.24, -0.44)
-        Self.buildForearm(into: leftArm, elbow: lElbow, wrist: lWrist, sleeve: sleeveMat, cuff: cuffMat, skin: skinMat)
+        // ---- Left arm: gloved fist on the basket handle, tucked into the bottom-left corner.
+        let lElbow = SIMD3<Float>(-0.46, -0.48, -0.08)
+        let lWrist = SIMD3<Float>(-0.34, -0.29, -0.45)
+        Self.buildForearm(into: leftArm, elbow: lElbow, wrist: lWrist, sleeve: sleeveMat, cuff: cuff)
         leftHand.root.simdPosition = lWrist
-        leftHand.root.simdOrientation = simd_quatf(angle: -0.2, axis: SIMD3(0, 1, 0))
-            * simd_quatf(angle: 1.25, axis: SIMD3(0, 0, 1))
-            * simd_quatf(angle: -0.1, axis: SIMD3(1, 0, 0))
-        leftHand.root.scale = SCNVector3(0.95, 0.95, 0.95)
-        leftHand.pose(curl: 0.95, thumb: 0.8)
+        leftHand.root.simdOrientation = simd_quatf(angle: -0.25, axis: SIMD3(0, 1, 0))
+            * simd_quatf(angle: 1.3, axis: SIMD3(0, 0, 1))
+            * simd_quatf(angle: -0.15, axis: SIMD3(1, 0, 0))
+        leftHand.pose(curl: 1.0, thumb: 0.85)
         leftArm.addChildNode(leftHand.root)
-        // The handle runs through the fist, so the basket hangs just below it.
-        basketHolder.simdPosition = lWrist + SIMD3(0.012, -0.045, -0.07)
+        basketHolder.simdPosition = lWrist + SIMD3(0.012, -0.04, -0.065)
+        basketHolder.scale = SCNVector3(0.72, 0.72, 0.72)
         leftArm.addChildNode(basketHolder)
         root.addChildNode(leftArm)
 
@@ -153,15 +151,12 @@ final class FirstPersonRig {
     }
 
     private static func buildForearm(into arm: SCNNode, elbow: SIMD3<Float>, wrist: SIMD3<Float>,
-                                     sleeve: SCNMaterial, cuff: SCNMaterial, skin: SCNMaterial) {
+                                     sleeve: SCNMaterial, cuff: SCNMaterial) {
         let dir = simd_normalize(wrist - elbow)
-        let sleeveEnd = elbow + (wrist - elbow) * 0.5
-        // Sleeve (tapered: two capsules), a cuff, then bare forearm narrowing to the wrist.
-        arm.addChildNode(limb(from: elbow - dir * 0.12, to: elbow + (wrist - elbow) * 0.25, radius: 0.052, mat: sleeve))
-        arm.addChildNode(limb(from: elbow + (wrist - elbow) * 0.2, to: sleeveEnd, radius: 0.046, mat: sleeve))
-        arm.addChildNode(limb(from: sleeveEnd - dir * 0.012, to: sleeveEnd + dir * 0.012, radius: 0.049, mat: cuff))
-        arm.addChildNode(limb(from: sleeveEnd, to: wrist + (sleeveEnd - wrist) * 0.45, radius: 0.033, mat: skin))
-        arm.addChildNode(limb(from: wrist + (sleeveEnd - wrist) * 0.5, to: wrist + dir * 0.005, radius: 0.027, mat: skin))
+        // Long uniform sleeve right down to a glove cuff at the wrist.
+        arm.addChildNode(limb(from: elbow - dir * 0.15, to: elbow + (wrist - elbow) * 0.45, radius: 0.05, mat: sleeve))
+        arm.addChildNode(limb(from: elbow + (wrist - elbow) * 0.4, to: wrist - dir * 0.03, radius: 0.043, mat: sleeve))
+        arm.addChildNode(limb(from: wrist - dir * 0.035, to: wrist + dir * 0.005, radius: 0.036, mat: cuff))
     }
 
     /// A capsule from a to b.
@@ -195,15 +190,19 @@ final class FirstPersonRig {
         // Arms swing a little with each step, opposite to each other.
         leftArm.simdEulerAngles = SIMD3(sin(bobPhase * 2) * 0.025 * walk, 0, sin(bobPhase) * 0.02 * walk)
 
-        // Reach: push the right hand forward, open then close the fingers, come back.
+        // Reach: the right hand sweeps up from below the screen, opens, grips, and drops away.
         let t = Float(now - reachStart)
-        let dur: Float = 0.28
+        let dur: Float = 0.32
         var e: Float = 0
         if t >= 0 && t < dur { e = sin(t / dur * .pi) }
-        let swing = -sin(bobPhase * 2) * 0.02 * walk
-        rightArm.simdPosition = SIMD3(-0.025 * e, 0.05 * e, -0.15 * e)
-        rightArm.simdEulerAngles = SIMD3(0.1 * e + swing, 0.08 * e, 0)
-        let grip = t >= 0 && t < dur ? (t < dur * 0.45 ? -0.1 * (t / (dur * 0.45)) : min(1, (t - dur * 0.45) / (dur * 0.3)) * 0.85) : 0
-        rightHand.pose(curl: 0.12 + max(-0.1, grip), thumb: 0.1 + max(0, grip))
+        rightArm.isHidden = e <= 0.001
+        if !rightArm.isHidden {
+            let ease = e * e * (3 - 2 * e)
+            rightArm.simdPosition = SIMD3(-0.03 * ease, -0.3 * (1 - ease) + 0.03 * ease, -0.12 * ease)
+            rightArm.simdEulerAngles = SIMD3(0.12 * ease, 0.06 * ease, 0)
+            let p = t / dur
+            let grip: Float = p < 0.4 ? 0 : min(1, (p - 0.4) / 0.25)
+            rightHand.pose(curl: 0.05 + grip * 0.85, thumb: grip * 0.9)
+        }
     }
 }

@@ -110,12 +110,13 @@ struct SettingsView: View {
             SliderRow(title: "Walk speed", value: g(\.walkSpeed), range: 0.7...1.6, format: pct)
         }
         Section2("The mess") {
-            SliderRow(title: "Mess size", value: g(\.messSize), range: 0.4...1.5, format: pct)
+            SliderRow(title: "Store size (kinds of stock)", value: g(\.messSize), range: 0.4...1, format: pct)
             ToggleRow(title: "Items start on wrong shelves", isOn: g(\.misplacedItems))
             ToggleRow(title: "Expired items to throw out", isOn: g(\.expiredItems))
             ToggleRow(title: "Knocked-over items", isOn: g(\.tippedItems))
         }
         Section2("Sorting rules") {
+            ToggleRow(title: "Strict: shelves refuse items that don't belong", isOn: g(\.strictPlacement))
             ToggleRow(title: "Ding when an item is in the right section", isOn: g(\.placementFeedback))
             ToggleRow(title: "Auto-pick matching item for a spot", isOn: g(\.autoMatch))
             ToggleRow(title: "Keep identical items together", isOn: g(\.keepTogether))

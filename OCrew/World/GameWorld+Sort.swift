@@ -133,6 +133,20 @@ extension GameWorld {
             Feedback.shared.play(.bonk, volume: 0.6)
             return
         }
+        if game.strictPlacement && (it.expired || slot.category != it.category) {
+            let msg: String
+            if it.expired {
+                msg = "That \(p.name) is expired — it goes in the trash bin by the door, not on a shelf"
+            } else if let here = slot.category {
+                msg = "\(p.name) doesn't belong in \(here). Look for the \(it.category.uppercased()) sign"
+            } else {
+                msg = "\(p.name) doesn't go here. Look for the \(it.category.uppercased()) sign"
+            }
+            toast(msg, .warn)
+            Feedback.shared.play(.bonk, volume: 0.6)
+            Feedback.shared.haptic(.warning)
+            return
+        }
         if let k = slot.key, k != it.key {
             let other = slot.items.first.flatMap { Catalog.product($0.product)?.name } ?? "something else"
             toast("That spot has \(other) — use Drop to take them out first", .warn)
@@ -239,6 +253,8 @@ extension GameWorld {
             guard let fx = fixtures[safe: f], let slot = fx.slots[safe: s] else { return nil }
             if let it = chooseItem(for: slot), let p = Catalog.product(it.product) {
                 if fx.kind != p.fixture { return "\(p.name) doesn't go in a \(fx.kind.label.lowercased())" }
+                if game.strictPlacement && it.expired { return "Expired — take it to the trash" }
+                if game.strictPlacement && slot.category != it.category { return "✕ \(p.name) doesn't belong here" }
                 if let k = slot.key, k != it.key { return "Spot has \(slot.items.first.flatMap { Catalog.product($0.product)?.name } ?? "other stock")  ·  Drop takes one out" }
                 if slot.isFull { return "Full" }
                 return "Place \(p.name)\(it.expired ? " (expired)" : "")"

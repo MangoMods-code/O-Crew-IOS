@@ -57,6 +57,9 @@ final class GameWorld {
     var binned = 0
     var total = 0
     var nextItemID = 1
+    var activeProducts: [String] = []
+    /// How many shelf spots each product fills when the level is done (shelves end up full).
+    var slotPlan: [String: Int] = [:]
     var chunks: [Int: FloorChunk] = [:]
     var chunksDirty = false
     var lastFOV: Double = 0
@@ -93,9 +96,15 @@ final class GameWorld {
     init(level: OrgLevel, save: LevelSave?) {
         self.level = level
 
+        // Which products this run uses ("Mess size" scales how many kinds of stock there are).
+        let n = level.products.count
+        let want = Int((Double(n) * SettingsStore.shared.game.messSize).rounded())
+        let active = Array(level.products.prefix(max(min(4, n), min(n, want))))
+        activeProducts = active
+
         // Plan shelf rows: each category gets enough rows for its products.
         var groups: [(kind: FixtureKind, cat: String, count: Int)] = []
-        for id in level.products {
+        for id in active {
             guard let p = Catalog.product(id) else { continue }
             if let i = groups.firstIndex(where: { $0.kind == p.fixture && $0.cat == p.category }) {
                 groups[i].count += 1
@@ -129,19 +138,33 @@ final class GameWorld {
         buildScene()
         playerRects = layout.solidRects
 
-        // Label the rows
+        // Label the rows. Leftover rows on the last unit of a kind go to that kind's last
+        // section, so every row is labeled and every spot gets filled.
         var queues = rowQueues
+        var lastCat: [FixtureKind: String] = [:]
+        for g in groups { lastCat[g.kind] = g.cat }
+        var catSlots: [String: Int] = [:]
         for f in fixtures {
             var cats: [String?] = []
             for _ in 0..<3 {
+                var cat: String? = lastCat[f.kind]
                 if var q = queues[f.kind], !q.isEmpty {
-                    cats.append(q.removeFirst())
+                    cat = q.removeFirst()
                     queues[f.kind] = q
-                } else {
-                    cats.append(nil)
                 }
+                cats.append(cat)
+                if let c = cat { catSlots[f.kind.rawValue + "|" + c, default: 0] += 2 }
             }
             f.setRows(cats, showLabels: display.showRowLabels, signScale: Float(display.signScale))
+        }
+        // Share each section's spots among its products.
+        for g in groups {
+            let prods = active.filter { Catalog.product($0)?.fixture == g.kind && Catalog.product($0)?.category == g.cat }
+            guard !prods.isEmpty else { continue }
+            let slots = catSlots[g.kind.rawValue + "|" + g.cat] ?? prods.count * level.slotsPerProduct
+            for (i, id) in prods.enumerated() {
+                slotPlan[id] = slots / prods.count + (i < slots % prods.count ? 1 : 0)
+            }
         }
 
         if let s = save, s.fixtureCount == fixtures.count, restore(s) {
@@ -158,15 +181,15 @@ final class GameWorld {
 
     private func generateMess() {
         var list: [Item] = []
-        for id in level.products {
+        // Exactly enough stock to fill every planned spot: the store ends up fully stocked.
+        for id in activeProducts {
             guard let p = Catalog.product(id) else { continue }
-            let cap = Slot.capacity(for: p) * level.slotsPerProduct
-            let n = max(2, min(cap, Int((Double(cap) * level.fill * game.messSize).rounded())))
+            let n = Slot.capacity(for: p) * max(1, slotPlan[id] ?? level.slotsPerProduct)
             for _ in 0..<n { list.append(makeItem(id, expired: false)) }
         }
         if game.expiredItems && level.expired > 0 {
             for _ in 0..<level.expired {
-                if let id = level.products.randomElement() { list.append(makeItem(id, expired: true)) }
+                if let id = activeProducts.randomElement() { list.append(makeItem(id, expired: true)) }
             }
         }
         total = list.count
@@ -174,8 +197,8 @@ final class GameWorld {
 
         // Some products start on the wrong shelves.
         if game.misplacedItems && level.misplaced > 0 {
-            let k = Int((Double(level.products.count) * level.misplaced).rounded())
-            for id in level.products.shuffled().prefix(k) {
+            let k = Int((Double(activeProducts.count) * level.misplaced).rounded())
+            for id in activeProducts.shuffled().prefix(k) {
                 guard let p = Catalog.product(id) else { continue }
                 let candidates = fixtures.filter { $0.kind == p.fixture }.flatMap { $0.slots }
                     .filter { $0.items.isEmpty && $0.category != p.category }

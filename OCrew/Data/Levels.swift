@@ -89,7 +89,7 @@ enum Levels {
                 out.append(OrgLevel(
                     theme: theme, stage: stage, index: out.count,
                     products: Array(theme.products.prefix(count)),
-                    slotsPerProduct: stage == 3 && !big ? 3 : 2,
+                    slotsPerProduct: stage == 3 && !big ? 2 : 1,
                     fill: stage == 1 ? 0.7 : stage == 2 ? 0.75 : 0.7,
                     misplaced: stage == 1 ? 0 : stage == 2 ? 0.25 : 0.3,
                     expired: stage == 3 ? 6 + n / 2 : 0))

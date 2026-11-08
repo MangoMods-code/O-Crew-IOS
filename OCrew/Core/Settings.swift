@@ -133,6 +133,7 @@ struct GameSettings: Codable, Equatable {
     var placementFeedback = true
     var autoMatch = true
     var keepTogether = true
+    var strictPlacement = true
     var misplacedItems = true
     var expiredItems = true
     var tippedItems = true
@@ -146,13 +147,13 @@ struct GameSettings: Codable, Equatable {
         difficulty = preset
         switch preset {
         case .relaxed:
-            basketCapacity = 30; messSize = 0.7; placementFeedback = true; skillCooldown = 0.7
+            basketCapacity = 30; messSize = 0.75; placementFeedback = true; skillCooldown = 0.7
             walkSpeed = 1.15; parTimeScale = 1.4; pickupReach = 3.0
         case .normal:
             basketCapacity = 20; messSize = 1.0; placementFeedback = true; skillCooldown = 1.0
             walkSpeed = 1.0; parTimeScale = 1.0; pickupReach = 2.6
         case .hard:
-            basketCapacity = 14; messSize = 1.25; placementFeedback = false; skillCooldown = 1.3
+            basketCapacity = 14; messSize = 1.0; placementFeedback = false; skillCooldown = 1.3
             walkSpeed = 1.0; parTimeScale = 0.8; pickupReach = 2.3
         case .custom:
             break

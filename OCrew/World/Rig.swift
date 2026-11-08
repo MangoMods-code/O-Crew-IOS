@@ -2,6 +2,94 @@ import SceneKit
 import simd
 import UIKit
 
+/// A jointed hand: rounded palm, three-segment fingers, two-segment thumb.
+/// Local space: fingers point toward -z, back of the hand faces +y.
+@MainActor
+final class Hand {
+    let root = SCNNode()
+    /// [finger][joint] pivots; rotating a joint about x by a negative angle curls it.
+    private(set) var joints: [[SCNNode]] = []
+    private(set) var thumbJoints: [SCNNode] = []
+    private let mirrored: Bool
+
+    init(skin: SCNMaterial, mirrored: Bool) {
+        self.mirrored = mirrored
+        let sx: Float = mirrored ? -1 : 1
+
+        // Palm: a rounded slab, slightly wider at the knuckles.
+        let palm = SCNNode(geometry: SCNBox(width: 0.078, height: 0.026, length: 0.088, chamferRadius: 0.012))
+        palm.geometry?.firstMaterial = skin
+        palm.position = SCNVector3(0, 0, -0.045)
+        root.addChildNode(palm)
+        let heel = SCNNode(geometry: SCNCapsule(capRadius: 0.016, height: 0.07))
+        heel.geometry?.firstMaterial = skin
+        heel.eulerAngles.z = Float.pi / 2
+        heel.position = SCNVector3(0, -0.004, -0.008)
+        root.addChildNode(heel)
+
+        // Fingers: index (thumb side) to pinky.
+        let xs: [Float] = [-0.027, -0.009, 0.009, 0.026]
+        let lengths: [[Float]] = [[0.040, 0.025, 0.020], [0.044, 0.028, 0.021], [0.041, 0.026, 0.020], [0.032, 0.020, 0.017]]
+        let radii: [Float] = [0.0098, 0.0102, 0.0096, 0.0086]
+        let baseZ: [Float] = [-0.088, -0.091, -0.089, -0.083]
+        for i in 0..<4 {
+            var chain: [SCNNode] = []
+            var parent = root
+            var z = baseZ[i]
+            for j in 0..<3 {
+                let pivot = SCNNode()
+                pivot.position = SCNVector3(j == 0 ? xs[i] * sx : 0, 0, j == 0 ? z : -lengths[i][j - 1])
+                if j == 0 { pivot.eulerAngles.y = -xs[i] * sx * 1.6 }   // slight natural spread
+                let r = radii[i] * (1 - Float(j) * 0.08)
+                let seg = SCNNode(geometry: SCNCapsule(capRadius: CGFloat(r), height: CGFloat(lengths[i][j] + r * 2)))
+                seg.geometry?.firstMaterial = skin
+                seg.eulerAngles.x = -Float.pi / 2
+                seg.position = SCNVector3(0, 0, -lengths[i][j] / 2)
+                pivot.addChildNode(seg)
+                parent.addChildNode(pivot)
+                chain.append(pivot)
+                parent = pivot
+                z = 0
+            }
+            joints.append(chain)
+        }
+        // Thumb: comes off the side of the palm, angled forward and down.
+        let tBase = SCNNode()
+        tBase.position = SCNVector3(-0.037 * sx, -0.008, -0.022)
+        tBase.eulerAngles = SCNVector3(-0.25, 0.85 * sx, 0.35 * sx)
+        root.addChildNode(tBase)
+        var parent = tBase
+        for (j, len) in [Float(0.036), 0.027].enumerated() {
+            let pivot = SCNNode()
+            pivot.position = SCNVector3(0, 0, j == 0 ? 0 : -0.036)
+            let r: Float = j == 0 ? 0.0125 : 0.0108
+            let seg = SCNNode(geometry: SCNCapsule(capRadius: CGFloat(r), height: CGFloat(len + r * 2)))
+            seg.geometry?.firstMaterial = skin
+            seg.eulerAngles.x = -Float.pi / 2
+            seg.position = SCNVector3(0, 0, -len / 2)
+            pivot.addChildNode(seg)
+            parent.addChildNode(pivot)
+            thumbJoints.append(pivot)
+            parent = pivot
+        }
+    }
+
+    /// 0 = open and relaxed, 1 = tight fist.
+    func pose(curl: Float, thumb: Float) {
+        let base: [Float] = [0.18, 0.22, 0.26, 0.3]   // relaxed hands are never perfectly straight
+        for (i, chain) in joints.enumerated() {
+            let c = base[i] + curl * 1.35
+            chain[0].eulerAngles.x = -c
+            chain[1].eulerAngles.x = -(base[i] * 1.4 + curl * 1.55)
+            chain[2].eulerAngles.x = -(base[i] + curl * 1.1)
+        }
+        if thumbJoints.count == 2 {
+            thumbJoints[0].eulerAngles.x = -0.15 - thumb * 0.5
+            thumbJoints[1].eulerAngles.x = -0.25 - thumb * 0.9
+        }
+    }
+}
+
 /// First-person arms: left hand carries the basket, right hand reaches out to grab and place.
 /// Everything lives in camera space (x right, y up, -z forward).
 @MainActor
@@ -10,55 +98,70 @@ final class FirstPersonRig {
     let basketHolder = SCNNode()
     private let rightArm = SCNNode()
     private let leftArm = SCNNode()
-    private var fingers: [SCNNode] = []
-    private var knuckles: [SCNNode] = []
-    private var thumb = SCNNode()
+    private let rightHand: Hand
+    private let leftHand: Hand
     private var reachStart: Double = -10
     private var sway = SIMD2<Float>(0, 0)
-    private let rightRest = SIMD3<Float>(0, 0, 0)
 
     init(sleeve: UInt32, skin: UInt32) {
-        let sleeveMat = Models.freshMat(sleeve)
-        let cuffMat = Models.freshMat(0xF4F6F7)
-        let skinMat = Models.freshMat(skin)
+        let sleeveMat = SCNMaterial()
+        sleeveMat.diffuse.contents = UIColor(hex: sleeve)
+        sleeveMat.lightingModel = .lambert
+        let cuffMat = SCNMaterial()
+        cuffMat.diffuse.contents = UIColor(hex: sleeve).withAlphaComponent(1)
+        cuffMat.multiply.contents = UIColor(white: 0.78, alpha: 1)
+        cuffMat.lightingModel = .lambert
+        let skinMat = SCNMaterial()
+        skinMat.diffuse.contents = UIColor(hex: 0xE8B38A)
+        skinMat.specular.contents = UIColor(white: 0.18, alpha: 1)
+        skinMat.shininess = 0.25
+        skinMat.lightingModel = .blinn
 
-        // ---- Right arm (reaching hand)
-        let rElbow = SIMD3<Float>(0.42, -0.44, -0.14)
-        let rWrist = SIMD3<Float>(0.25, -0.21, -0.5)
-        let rMid = rElbow + (rWrist - rElbow) * 0.55
-        rightArm.addChildNode(Self.limb(from: rElbow + SIMD3(0.05, -0.08, 0.12), to: rMid, radius: 0.058, mat: sleeveMat))
-        rightArm.addChildNode(Self.limb(from: rMid - (rWrist - rElbow) * 0.03, to: rMid + (rWrist - rElbow) * 0.03, radius: 0.06, mat: cuffMat))
-        rightArm.addChildNode(Self.limb(from: rMid, to: rWrist, radius: 0.04, mat: skinMat))
-        let hand = Self.hand(skin: skinMat, mirrored: false, fingers: &fingers, thumb: &thumb)
-        hand.simdPosition = rWrist
-        hand.simdOrientation = simd_quatf(angle: 0.35, axis: SIMD3(0, 1, 0)) * simd_quatf(angle: -0.25, axis: SIMD3(1, 0, 0))
-        rightArm.addChildNode(hand)
+        rightHand = Hand(skin: skinMat, mirrored: false)
+        leftHand = Hand(skin: skinMat, mirrored: true)
+
+        // ---- Right arm: forearm angled in from the lower right, hand relaxed, palm down.
+        let rElbow = SIMD3<Float>(0.4, -0.42, -0.1)
+        let rWrist = SIMD3<Float>(0.23, -0.2, -0.47)
+        Self.buildForearm(into: rightArm, elbow: rElbow, wrist: rWrist, sleeve: sleeveMat, cuff: cuffMat, skin: skinMat)
+        rightHand.root.simdPosition = rWrist
+        rightHand.root.simdOrientation = simd_quatf(angle: 0.32, axis: SIMD3(0, 1, 0))
+            * simd_quatf(angle: -0.18, axis: SIMD3(1, 0, 0))
+            * simd_quatf(angle: -0.42, axis: SIMD3(0, 0, 1))
+        rightHand.root.scale = SCNVector3(0.95, 0.95, 0.95)
+        rightArm.addChildNode(rightHand.root)
+        rightHand.pose(curl: 0.12, thumb: 0.1)
         root.addChildNode(rightArm)
 
-        // ---- Left arm (holds the basket handle)
-        let lElbow = SIMD3<Float>(-0.46, -0.46, -0.12)
-        let lWrist = SIMD3<Float>(-0.31, -0.25, -0.47)
-        let lMid = lElbow + (lWrist - lElbow) * 0.55
-        leftArm.addChildNode(Self.limb(from: lElbow + SIMD3(-0.05, -0.08, 0.12), to: lMid, radius: 0.058, mat: sleeveMat))
-        leftArm.addChildNode(Self.limb(from: lMid - (lWrist - lElbow) * 0.03, to: lMid + (lWrist - lElbow) * 0.03, radius: 0.06, mat: cuffMat))
-        leftArm.addChildNode(Self.limb(from: lMid, to: lWrist, radius: 0.04, mat: skinMat))
-        // A closed fist around the handle
-        let fist = SCNNode(geometry: SCNBox(width: 0.075, height: 0.08, length: 0.09, chamferRadius: 0.03))
-        fist.geometry?.firstMaterial = skinMat
-        fist.simdPosition = lWrist + SIMD3(0.01, -0.035, -0.03)
-        leftArm.addChildNode(fist)
-        for i in 0..<4 {
-            let k = SCNNode(geometry: SCNSphere(radius: 0.016))
-            k.geometry?.firstMaterial = skinMat
-            k.simdPosition = lWrist + SIMD3(0.035, -0.012 - Float(i) * 0.02, -0.065)
-            leftArm.addChildNode(k)
-        }
-        basketHolder.simdPosition = lWrist + SIMD3(0.0, -0.08, -0.03)
+        // ---- Left arm: fist gripping the basket handle (palm facing in).
+        let lElbow = SIMD3<Float>(-0.44, -0.44, -0.1)
+        let lWrist = SIMD3<Float>(-0.29, -0.24, -0.44)
+        Self.buildForearm(into: leftArm, elbow: lElbow, wrist: lWrist, sleeve: sleeveMat, cuff: cuffMat, skin: skinMat)
+        leftHand.root.simdPosition = lWrist
+        leftHand.root.simdOrientation = simd_quatf(angle: -0.2, axis: SIMD3(0, 1, 0))
+            * simd_quatf(angle: 1.25, axis: SIMD3(0, 0, 1))
+            * simd_quatf(angle: -0.1, axis: SIMD3(1, 0, 0))
+        leftHand.root.scale = SCNVector3(0.95, 0.95, 0.95)
+        leftHand.pose(curl: 0.95, thumb: 0.8)
+        leftArm.addChildNode(leftHand.root)
+        // The handle runs through the fist, so the basket hangs just below it.
+        basketHolder.simdPosition = lWrist + SIMD3(0.012, -0.045, -0.07)
         leftArm.addChildNode(basketHolder)
         root.addChildNode(leftArm)
 
-        knuckles = fingers.compactMap { $0.childNode(withName: "knuckle", recursively: false) }
         Models.setCategory(root, 2)
+    }
+
+    private static func buildForearm(into arm: SCNNode, elbow: SIMD3<Float>, wrist: SIMD3<Float>,
+                                     sleeve: SCNMaterial, cuff: SCNMaterial, skin: SCNMaterial) {
+        let dir = simd_normalize(wrist - elbow)
+        let sleeveEnd = elbow + (wrist - elbow) * 0.5
+        // Sleeve (tapered: two capsules), a cuff, then bare forearm narrowing to the wrist.
+        arm.addChildNode(limb(from: elbow - dir * 0.12, to: elbow + (wrist - elbow) * 0.25, radius: 0.052, mat: sleeve))
+        arm.addChildNode(limb(from: elbow + (wrist - elbow) * 0.2, to: sleeveEnd, radius: 0.046, mat: sleeve))
+        arm.addChildNode(limb(from: sleeveEnd - dir * 0.012, to: sleeveEnd + dir * 0.012, radius: 0.049, mat: cuff))
+        arm.addChildNode(limb(from: sleeveEnd, to: wrist + (sleeveEnd - wrist) * 0.45, radius: 0.033, mat: skin))
+        arm.addChildNode(limb(from: wrist + (sleeveEnd - wrist) * 0.5, to: wrist + dir * 0.005, radius: 0.027, mat: skin))
     }
 
     /// A capsule from a to b.
@@ -66,55 +169,13 @@ final class FirstPersonRig {
         let d = b - a
         let len = max(0.001, simd_length(d))
         let g = SCNCapsule(capRadius: CGFloat(radius), height: CGFloat(len + radius * 2))
-        g.radialSegmentCount = 14
-        g.capSegmentCount = 6
+        g.radialSegmentCount = 16
+        g.capSegmentCount = 8
         g.firstMaterial = mat
         let n = SCNNode(geometry: g)
         n.simdPosition = (a + b) / 2
         n.simdOrientation = simd_quatf(from: SIMD3(0, 1, 0), to: d / len)
         return n
-    }
-
-    private static func hand(skin: SCNMaterial, mirrored: Bool, fingers: inout [SCNNode], thumb: inout SCNNode) -> SCNNode {
-        let h = SCNNode()
-        let palm = SCNNode(geometry: SCNBox(width: 0.085, height: 0.032, length: 0.1, chamferRadius: 0.014))
-        palm.geometry?.firstMaterial = skin
-        palm.position = SCNVector3(0, 0, -0.045)
-        h.addChildNode(palm)
-        let lengths: [Float] = [0.062, 0.072, 0.068, 0.054]
-        for i in 0..<4 {
-            let pivot = SCNNode()
-            pivot.position = SCNVector3(-0.03 + Float(i) * 0.02, 0, -0.095)
-            let seg1 = SCNNode(geometry: SCNCapsule(capRadius: 0.0105, height: CGFloat(lengths[i] * 0.55 + 0.021)))
-            seg1.geometry?.firstMaterial = skin
-            seg1.eulerAngles.x = -Float.pi / 2
-            seg1.position = SCNVector3(0, 0, -lengths[i] * 0.275)
-            pivot.addChildNode(seg1)
-            let knuckle = SCNNode()
-            knuckle.position = SCNVector3(0, 0, -lengths[i] * 0.55)
-            let seg2 = SCNNode(geometry: SCNCapsule(capRadius: 0.0095, height: CGFloat(lengths[i] * 0.45 + 0.019)))
-            seg2.geometry?.firstMaterial = skin
-            seg2.eulerAngles.x = -Float.pi / 2
-            seg2.position = SCNVector3(0, 0, -lengths[i] * 0.225)
-            knuckle.addChildNode(seg2)
-            knuckle.name = "knuckle"
-            pivot.addChildNode(knuckle)
-            pivot.eulerAngles.x = -0.25        // relaxed curl
-            knuckle.eulerAngles.x = -0.35
-            h.addChildNode(pivot)
-            fingers.append(pivot)
-        }
-        let t = SCNNode()
-        t.position = SCNVector3(-0.045, -0.006, -0.03)
-        let tseg = SCNNode(geometry: SCNCapsule(capRadius: 0.012, height: 0.07))
-        tseg.geometry?.firstMaterial = skin
-        tseg.eulerAngles.x = -Float.pi / 2
-        tseg.position = SCNVector3(0, 0, -0.028)
-        t.addChildNode(tseg)
-        t.eulerAngles.y = 0.6
-        h.addChildNode(t)
-        thumb = t
-        return h
     }
 
     /// Plays the reach-and-grab motion.
@@ -125,24 +186,24 @@ final class FirstPersonRig {
         let target = reduceMotion ? SIMD2<Float>(0, 0) : SIMD2(max(-1, min(1, -lookDelta.x * 0.004)), max(-1, min(1, lookDelta.y * 0.004)))
         sway += (target - sway) * min(1, dt * 10)
         let walk: Float = reduceMotion ? 0 : move
-        let bobX = sin(bobPhase) * 0.016 * walk
-        let bobY = -abs(sin(bobPhase)) * 0.022 * walk
-        let breathe: Float = reduceMotion ? 0 : sin(Float(now) * 1.7) * 0.004
+        let bobX = sin(bobPhase) * 0.014 * walk
+        let bobY = -abs(sin(bobPhase)) * 0.02 * walk
+        let breathe: Float = reduceMotion ? 0 : sin(Float(now) * 1.7) * 0.0035
         root.simdPosition = SIMD3(bobX + sway.x * 0.05, bobY + breathe + sway.y * 0.04, 0)
-        root.simdEulerAngles = SIMD3(sway.y * 0.06, sway.x * 0.08, -bobX * 1.2)
+        root.simdEulerAngles = SIMD3(sway.y * 0.06, sway.x * 0.08, -bobX * 1.1)
 
-        // Basket swings opposite to the step.
-        leftArm.simdEulerAngles = SIMD3(sin(bobPhase * 2) * 0.03 * walk, 0, sin(bobPhase) * 0.025 * walk)
+        // Arms swing a little with each step, opposite to each other.
+        leftArm.simdEulerAngles = SIMD3(sin(bobPhase * 2) * 0.025 * walk, 0, sin(bobPhase) * 0.02 * walk)
 
-        // Reach: push the right hand forward and close the fingers, then come back.
+        // Reach: push the right hand forward, open then close the fingers, come back.
         let t = Float(now - reachStart)
-        let dur: Float = 0.26
+        let dur: Float = 0.28
         var e: Float = 0
         if t >= 0 && t < dur { e = sin(t / dur * .pi) }
-        rightArm.simdPosition = rightRest + SIMD3(-0.03 * e, 0.06 * e, -0.16 * e)
-        rightArm.simdEulerAngles = SIMD3(0.12 * e, 0.1 * e, 0)
-        for f in fingers { f.eulerAngles.x = -0.25 - 0.9 * e }
-        for k in knuckles { k.eulerAngles.x = -0.35 - 0.9 * e }
-        thumb.eulerAngles.y = 0.6 - 0.5 * e
+        let swing = -sin(bobPhase * 2) * 0.02 * walk
+        rightArm.simdPosition = SIMD3(-0.025 * e, 0.05 * e, -0.15 * e)
+        rightArm.simdEulerAngles = SIMD3(0.1 * e + swing, 0.08 * e, 0)
+        let grip = t >= 0 && t < dur ? (t < dur * 0.45 ? -0.1 * (t / (dur * 0.45)) : min(1, (t - dur * 0.45) / (dur * 0.3)) * 0.85) : 0
+        rightHand.pose(curl: 0.12 + max(-0.1, grip), thumb: 0.1 + max(0, grip))
     }
 }

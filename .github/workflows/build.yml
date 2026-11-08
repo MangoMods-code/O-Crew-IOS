@@ -28,6 +28,13 @@ jobs:
       - name: Generate Xcode project
         run: xcodegen generate
 
+      # Every build gets its own version (0.1.<run>, build <run>) so app installers/signers
+      # see each IPA as a new update instead of "this version is already uploaded".
+      - name: Set version
+        run: |
+          echo "APP_VERSION=0.1.${{ github.run_number }}" >> "$GITHUB_ENV"
+          echo "APP_BUILD=${{ github.run_number }}" >> "$GITHUB_ENV"
+
       - name: Build (unsigned)
         run: |
           set -o pipefail
@@ -38,6 +45,7 @@ jobs:
             -configuration Release \
             -sdk iphoneos \
             SYMROOT="$PWD/build" \
+            MARKETING_VERSION="$APP_VERSION" CURRENT_PROJECT_VERSION="$APP_BUILD" \
             CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
             build 2>&1 | tee build.log | grep -E "error:|warning: unre|BUILD (SUCCEEDED|FAILED)" || true
           if ! grep -q "BUILD SUCCEEDED" build.log || [ ! -f build/Release-iphoneos/OCrew.app/OCrew ]; then
@@ -59,6 +67,8 @@ jobs:
           cp -R build/Release-iphoneos/OCrew.app Payload/
           zip -qry O-Crew.ipa Payload
           ls -lh O-Crew.ipa
+          /usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" Payload/OCrew.app/Info.plist
+          /usr/libexec/PlistBuddy -c "Print :CFBundleVersion" Payload/OCrew.app/Info.plist
 
       - name: Upload IPA artifact
         uses: actions/upload-artifact@v4
@@ -70,9 +80,9 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: build-${{ github.run_number }}
-          name: O-Crew build ${{ github.run_number }}
+          name: O-Crew ${{ env.APP_VERSION }} (build ${{ github.run_number }})
           body: |
-            Unsigned build from ${{ github.sha }}.
+            Version ${{ env.APP_VERSION }} (build ${{ github.run_number }}), unsigned, from ${{ github.sha }}.
             Download **O-Crew.ipa** below, then sign and install it with your usual tool (Sideloadly, AltStore, etc.).
           files: O-Crew.ipa
           make_latest: true

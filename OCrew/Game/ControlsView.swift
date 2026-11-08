@@ -37,6 +37,8 @@ final class ControlsView: UIView {
         knob.layer.shadowColor = UIColor.black.cgColor
         knob.layer.shadowOpacity = 0.35
         knob.layer.shadowRadius = 6
+        knob.layer.shouldRasterize = true
+        knob.layer.rasterizationScale = UIScreen.main.scale
         addSubview(base)
         addSubview(knob)
     }
@@ -75,6 +77,7 @@ final class ControlsView: UIView {
         base.layer.cornerRadius = radius
         knob.bounds = CGRect(x: 0, y: 0, width: radius * 0.9, height: radius * 0.9)
         knob.layer.cornerRadius = radius * 0.45
+        knob.layer.shadowPath = UIBezierPath(ovalIn: knob.bounds).cgPath
         if moveTouch == nil {
             base.center = fixedCenter
             knob.center = fixedCenter

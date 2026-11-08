@@ -97,15 +97,8 @@ extension GameWorld {
             Feedback.shared.play(.bonk, volume: 0.6)
             return
         }
-        floorItems[id] = nil
-        if let n = it.node {
-            n.name = nil
-            let dest = cameraWorldPosition + SIMD3(0, -0.4, 0)
-            n.runAction(.sequence([
-                .group([.move(to: SCNVector3(dest.x, dest.y, dest.z), duration: 0.16), .scale(to: 0.2, duration: 0.16)]),
-                .removeFromParentNode()]))
-        }
-        it.node = nil
+        flyFromFloor(it, to: cameraWorldPosition + SIMD3(0, -0.4, 0), duration: 0.16)
+        removeFromFloor(it)
         basket.append(it)
         pickedCount += 1
         if selectedKey == nil { selectedKey = it.key }
@@ -321,16 +314,10 @@ extension GameWorld {
     }
 
     private func pickUpQuiet(_ it: Item) {
-        floorItems[it.id] = nil
-        if let n = it.node {
-            n.name = nil
-            let dest = cameraWorldPosition + SIMD3(0, -0.4, 0)
-            let d = Double(simd_distance(SIMD2(n.simdPosition.x, n.simdPosition.z), SIMD2(dest.x, dest.z)))
-            n.runAction(.sequence([
-                .group([.move(to: SCNVector3(dest.x, dest.y, dest.z), duration: 0.15 + d * 0.06), .scale(to: 0.2, duration: 0.3)]),
-                .removeFromParentNode()]))
-        }
-        it.node = nil
+        let dest = cameraWorldPosition + SIMD3(0, -0.4, 0)
+        let d = Double(simd_distance(it.floorPos, SIMD2(dest.x, dest.z)))
+        flyFromFloor(it, to: dest, duration: 0.15 + d * 0.06)
+        removeFromFloor(it)
         basket.append(it)
         pickedCount += 1
     }

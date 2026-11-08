@@ -109,7 +109,7 @@ struct DisplaySettings: Codable, Equatable {
     var lookSensitivityY: Double = 1.0
     var invertY = false
     var headBob = true
-    var cameraSmoothing: Double = 0.35
+    var cameraSmoothing: Double = 0.0
     var frameRate: FrameRateCap = .fps60
     // Accessibility
     var colorblind: ColorblindMode = .off
@@ -124,7 +124,7 @@ struct DisplaySettings: Codable, Equatable {
 
 struct GameSettings: Codable, Equatable {
     var difficulty: Difficulty = .normal
-    var basketCapacity: Double = 10
+    var basketCapacity: Double = 20
     var messSize: Double = 1.0
     var placementFeedback = true
     var autoMatch = true
@@ -142,13 +142,13 @@ struct GameSettings: Codable, Equatable {
         difficulty = preset
         switch preset {
         case .relaxed:
-            basketCapacity = 15; messSize = 0.7; placementFeedback = true; skillCooldown = 0.7
+            basketCapacity = 30; messSize = 0.7; placementFeedback = true; skillCooldown = 0.7
             walkSpeed = 1.15; parTimeScale = 1.4; pickupReach = 3.0
         case .normal:
-            basketCapacity = 10; messSize = 1.0; placementFeedback = true; skillCooldown = 1.0
+            basketCapacity = 20; messSize = 1.0; placementFeedback = true; skillCooldown = 1.0
             walkSpeed = 1.0; parTimeScale = 1.0; pickupReach = 2.6
         case .hard:
-            basketCapacity = 8; messSize = 1.25; placementFeedback = false; skillCooldown = 1.3
+            basketCapacity = 14; messSize = 1.25; placementFeedback = false; skillCooldown = 1.3
             walkSpeed = 1.0; parTimeScale = 0.8; pickupReach = 2.3
         case .custom:
             break
@@ -165,8 +165,8 @@ final class SettingsStore: ObservableObject {
     @Published var display: DisplaySettings { didSet { save(display, key: Self.displayKey) } }
     @Published var game: GameSettings { didSet { save(game, key: Self.gameKey) } }
 
-    private static let displayKey = "ocrew.display.v2"
-    private static let gameKey = "ocrew.game.v2"
+    private static let displayKey = "ocrew.display.v3"
+    private static let gameKey = "ocrew.game.v3"
 
     private init() {
         display = Self.load(DisplaySettings.self, key: Self.displayKey, defaults: DisplaySettings())

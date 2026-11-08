@@ -8,6 +8,7 @@ final class Item {
     let expired: Bool
     var node: SCNNode?          // only while lying on the floor
     var floorPos = SIMD2<Float>(0, 0)
+    var chunk = 0
     var yaw: Float = 0
     var tipped = false
 
@@ -47,6 +48,7 @@ final class Slot {
         let hit = SCNNode(geometry: hitGeo)
         hit.position = SCNVector3(0, (h - 0.04) / 2 + 0.01, -depth / 2)
         hit.name = "slot:\(fixture):\(index)"
+        hit.isHidden = true   // hit-testable but never drawn
         root.addChildNode(hit)
 
         let tagGeo = SCNPlane(width: 0.3, height: 0.07)
@@ -227,9 +229,10 @@ final class Fixture {
         let frameColor: UInt32 = isCold ? (spec.kind == .fridge ? 0x3B4651 : 0xE3EEF4) : shelfColor
         let backColor: UInt32 = isCold ? 0xF4F8FA : shelfColor
 
+        let frame = SCNNode()
         func add(_ n: SCNNode, _ x: Float, _ y: Float, _ z: Float) {
             n.position = SCNVector3(x, y, z)
-            node.addChildNode(n)
+            frame.addChildNode(n)
         }
         add(Models.box(L, 0.1, D, frameColor), 0, 0.05, 0)
         add(Models.box(L, H, 0.04, backColor), 0, H / 2, -D / 2 + 0.02)
@@ -244,10 +247,16 @@ final class Fixture {
             let strip = SCNNode(geometry: SCNBox(width: CGFloat(L - 0.1), height: 0.03, length: 0.03, chamferRadius: 0))
             strip.geometry?.firstMaterial = Models.emissive(0xE8F8FF)
             add(strip, 0, H - 0.08, D / 2 - 0.05)
+        }
+        // One merged mesh for the whole frame.
+        node.addChildNode(frame.flattenedClone())
+        if isCold {
+            // Glass stays separate so it never blocks taps on the shelves behind it.
             let glass = SCNNode(geometry: SCNBox(width: CGFloat(L - 0.06), height: CGFloat(H - 0.16), length: 0.015, chamferRadius: 0))
             glass.geometry?.firstMaterial = Models.freshMat(spec.kind == .fridge ? 0xBFE6FF : 0xDDF3FF, alpha: 0.14)
             glass.categoryBitMask = Models.categoryNoHit
-            add(glass, 0, H / 2 + 0.03, D / 2 + 0.02)
+            glass.position = SCNVector3(0, H / 2 + 0.03, D / 2 + 0.02)
+            node.addChildNode(glass)
         }
     }
 }

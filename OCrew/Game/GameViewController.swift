@@ -47,7 +47,10 @@ final class GameViewController: UIViewController {
         scnView.scene = world.scene
         scnView.pointOfView = world.cameraNode
         scnView.backgroundColor = UIColor(hex: 0x9CC9EA)
-        scnView.antialiasingMode = .multisampling4X
+        // Render at 2x instead of the phone's native 3x and with lighter anti-aliasing:
+        // ~2.25x fewer pixels for the GPU, and the difference is hard to see on a phone.
+        scnView.contentScaleFactor = min(2, UIScreen.main.scale)
+        scnView.antialiasingMode = .multisampling2X
         scnView.rendersContinuously = true
         view.addSubview(scnView)
 
@@ -139,7 +142,7 @@ final class GameViewController: UIViewController {
             world.update(dt: dt, move: controls.moveVector)
 
             hitFrame += 1
-            if hitFrame % 2 == 0 {
+            if hitFrame % 3 == 0 {
                 focus = hitTarget(at: CGPoint(x: scnView.bounds.midX, y: scnView.bounds.midY))
                 world.setHighlight(focus)
             }
@@ -149,24 +152,29 @@ final class GameViewController: UIViewController {
                 lastRepeat = world.time
                 world.interact(f)
             }
-            if world.time - lastSave > 20 {
+            if world.time - lastSave > 45 {
                 lastSave = world.time
                 world.snapshot()
             }
         }
+        let rem = world.remaining
         hud.setStatus(level: "\(level.title) · \(level.stageName)", time: world.timeString(),
                       frozen: world.skills.isActive(.freeze, now: world.time),
-                      remaining: world.remaining, progress: world.progress)
+                      remaining: rem, progress: world.total > 0 ? 1 - Double(rem) / Double(world.total) : 1)
         hud.setPrompt(world.prompt(for: focus))
         hud.setTip(world.tutorialText)
         hud.crosshair.isTargeting = focus != nil
         let mul = world.skillMultiplier
         for (id, b) in hud.skillButtons {
-            b.cooldown = CGFloat(world.skills.cooldownFraction(id, now: world.time, multiplier: mul))
-            b.active = world.skills.isActive(id, now: world.time)
+            let cd = (CGFloat(world.skills.cooldownFraction(id, now: world.time, multiplier: mul)) * 60).rounded() / 60
+            if b.cooldown != cd { b.cooldown = cd }
+            let active = world.skills.isActive(id, now: world.time)
+            if b.active != active { b.active = active }
             let rem = world.skills.remaining(id, now: world.time)
-            b.countdown.text = rem > 0 ? "\(Int(ceil(rem)))" : nil
-            b.icon.alpha = rem > 0 ? 0.35 : 1
+            let text: String? = rem > 0 ? "\(Int(ceil(rem)))" : nil
+            if b.countdown.text != text { b.countdown.text = text }
+            let a: CGFloat = rem > 0 ? 0.35 : 1
+            if b.icon.alpha != a { b.icon.alpha = a }
         }
 
         fpsFrames += 1
@@ -182,7 +190,7 @@ final class GameViewController: UIViewController {
         let opts: [SCNHitTestOption: Any] = [
             .searchMode: SCNHitTestSearchMode.closest.rawValue,
             .categoryBitMask: Models.categoryWorld,
-            .ignoreHiddenNodes: true,
+            .ignoreHiddenNodes: false,   // hit boxes are hidden so they cost nothing to draw
         ]
         guard let hit = scnView.hitTest(p, options: opts).first else { return nil }
         return world.target(for: hit.node, hitPoint: hit.simdWorldCoordinates)

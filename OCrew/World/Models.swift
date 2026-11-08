@@ -209,8 +209,15 @@ enum Models {
         return root
     }
 
+    private static var flatTemplates: [String: SCNNode] = [:]
+
+    /// One merged node per product unit (much cheaper to draw than the multi-part template).
     static func productNode(_ p: Product, expired: Bool = false) -> SCNNode {
-        expired ? expiredTemplate(p).clone() : productTemplate(p).clone()
+        let key = (expired ? "x:" : "") + p.id
+        if let n = flatTemplates[key] { return n.clone() }
+        let flat = (expired ? expiredTemplate(p) : productTemplate(p)).flattenedClone()
+        flatTemplates[key] = flat
+        return flat.clone()
     }
 
     private static var expiredTemplates: [String: SCNNode] = [:]

@@ -102,7 +102,7 @@ struct SettingsView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
         Section2("Basket & reach") {
-            SliderRow(title: "Basket capacity", value: g(\.basketCapacity), range: 4...30, step: 1, format: { "\(Int($0)) items" })
+            SliderRow(title: "Basket capacity", value: g(\.basketCapacity), range: 6...40, step: 1, format: { "\(Int($0)) items" })
             SliderRow(title: "Pickup reach", value: g(\.pickupReach), range: 1.8...4, step: 0.1, format: { String(format: "%.1f m", $0) })
             SliderRow(title: "Walk speed", value: g(\.walkSpeed), range: 0.7...1.6, format: pct)
         }

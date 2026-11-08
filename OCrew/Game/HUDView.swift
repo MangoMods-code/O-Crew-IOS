@@ -35,10 +35,8 @@ final class RoundButton: UIControl {
         caption.textColor = .white
         caption.textAlignment = .center
         caption.isUserInteractionEnabled = false
-        caption.layer.shadowColor = UIColor.black.cgColor
-        caption.layer.shadowOpacity = 0.8
-        caption.layer.shadowRadius = 2
-        caption.layer.shadowOffset = .zero
+        caption.shadowColor = UIColor(white: 0, alpha: 0.9)   // cheap text shadow (no offscreen pass)
+        caption.shadowOffset = CGSize(width: 0, height: 1)
         addSubview(caption)
     }
 
@@ -251,6 +249,9 @@ final class HUDView: UIView {
     override init(frame: CGRect) {
         super.init(frame: frame)
         backgroundColor = .clear
+        // HUD opacity is applied per element; group opacity on a full-screen layer forces an
+        // expensive offscreen render every frame.
+        layer.allowsGroupOpacity = false
 
         infoPanel.layer.cornerRadius = 14
         infoPanel.isUserInteractionEnabled = false
@@ -268,7 +269,7 @@ final class HUDView: UIView {
         for p in [promptLabel, toastLabel, tipLabel] {
             p.textColor = .white
             p.textAlignment = .center
-            p.layer.masksToBounds = true
+            p.layer.masksToBounds = false   // rounded background without an offscreen mask pass
             p.numberOfLines = 1
             addSubview(p)
         }

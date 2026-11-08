@@ -17,6 +17,12 @@ struct BasketGroup: Equatable {
     let count: Int
 }
 
+final class FloorChunk {
+    var items: [Int] = []
+    var visual: SCNNode?
+    var dirty = false
+}
+
 @MainActor
 final class GameWorld {
     // MARK: Setup
@@ -47,6 +53,10 @@ final class GameWorld {
     var binned = 0
     var total = 0
     var nextItemID = 1
+    let hitRoot = SCNNode()
+    var chunks: [Int: FloorChunk] = [:]
+    var chunksDirty = false
+    var lastFOV: Double = 0
 
     // MARK: Progress
     var elapsed: Double = 0
@@ -70,7 +80,7 @@ final class GameWorld {
     var display: DisplaySettings { SettingsStore.shared.display }
     var game: GameSettings { SettingsStore.shared.game }
     var capacity: Int { max(3, Int(game.basketCapacity.rounded())) }
-    var par: Double { (30 + Double(total) * 4.0) * game.parTimeScale }
+    var par: Double { (45 + Double(total) * 2.5) * game.parTimeScale }
 
     // MARK: Init
 
@@ -134,6 +144,7 @@ final class GameWorld {
             generateMess()
         }
         tutorialActive = level.index == 0 && game.showTutorial && !ProgressStore.shared.data.seenTutorial && save == nil
+        rebuildChunks()
         updateBasketVisual()
     }
 
@@ -204,30 +215,91 @@ final class GameWorld {
         return it
     }
 
+    /// Floor items are drawn in merged chunks (one mesh per 4 m square). Each item only keeps
+    /// an invisible hit box so it can still be tapped individually.
     func placeOnFloor(_ it: Item, at p: SIMD2<Float>, yaw: Float, tipped: Bool) {
         guard let prod = Catalog.product(it.product) else { return }
         let s = prod.shape.size
         let root = SCNNode()
         root.name = "item:\(it.id)"
-        let model = Models.productNode(prod, expired: it.expired)
-        if tipped {
-            model.eulerAngles.z = Float.pi / 2
-            model.position.y = s.w / 2
-        }
-        root.addChildNode(model)
         let bw = max(0.2, tipped ? s.h : s.w), bh = max(0.18, tipped ? s.w : s.h), bd = max(0.2, s.d)
         let hit = SCNNode(geometry: SCNBox(width: CGFloat(bw), height: CGFloat(bh), length: CGFloat(bd), chamferRadius: 0))
-        hit.geometry?.firstMaterial = Models.invisible()
         hit.position = SCNVector3(tipped ? -s.h / 2 : 0, bh / 2, 0)
+        hit.isHidden = true
         root.addChildNode(hit)
         root.simdPosition = SIMD3(p.x, 0, p.y)
         root.simdEulerAngles = SIMD3(0, yaw, 0)
-        scene.rootNode.addChildNode(root)
+        hitRoot.addChildNode(root)
         it.node = root
         it.floorPos = p
         it.yaw = yaw
         it.tipped = tipped
         floorItems[it.id] = it
+        let key = chunkKey(p)
+        it.chunk = key
+        let c: FloorChunk
+        if let existing = chunks[key] { c = existing } else { c = FloorChunk(); chunks[key] = c }
+        c.items.append(it.id)
+        c.dirty = true
+        chunksDirty = true
+    }
+
+    func removeFromFloor(_ it: Item) {
+        floorItems[it.id] = nil
+        it.node?.removeFromParentNode()
+        it.node = nil
+        if let c = chunks[it.chunk] {
+            c.items.removeAll { $0 == it.id }
+            c.dirty = true
+            chunksDirty = true
+        }
+    }
+
+    func chunkKey(_ p: SIMD2<Float>) -> Int {
+        Int(floor(p.x / 4)) * 1000 + Int(floor(p.y / 4))
+    }
+
+    /// Rebuilds the merged meshes of any chunk that changed.
+    func rebuildChunks() {
+        guard chunksDirty else { return }
+        chunksDirty = false
+        for c in chunks.values where c.dirty {
+            c.dirty = false
+            c.visual?.removeFromParentNode()
+            c.visual = nil
+            guard !c.items.isEmpty else { continue }
+            let container = SCNNode()
+            for id in c.items {
+                guard let it = floorItems[id], let p = Catalog.product(it.product) else { continue }
+                let holder = SCNNode()
+                holder.simdPosition = SIMD3(it.floorPos.x, 0, it.floorPos.y)
+                holder.simdEulerAngles = SIMD3(0, it.yaw, 0)
+                let m = Models.productNode(p, expired: it.expired)
+                if it.tipped {
+                    m.eulerAngles.z = Float.pi / 2
+                    m.position.y = p.shape.size.w / 2
+                }
+                holder.addChildNode(m)
+                container.addChildNode(holder)
+            }
+            let flat = container.flattenedClone()
+            Models.setCategory(flat, Models.categoryNoHit)
+            scene.rootNode.addChildNode(flat)
+            c.visual = flat
+        }
+    }
+
+    /// A temporary copy of a floor item flying to a point (pickup / magnet animation).
+    func flyFromFloor(_ it: Item, to dest: SIMD3<Float>, duration: Double) {
+        guard let p = Catalog.product(it.product) else { return }
+        let n = Models.productNode(p, expired: it.expired)
+        n.simdPosition = SIMD3(it.floorPos.x, 0.05, it.floorPos.y)
+        n.simdEulerAngles = SIMD3(0, it.yaw, 0)
+        n.categoryBitMask = Models.categoryNoHit
+        scene.rootNode.addChildNode(n)
+        n.runAction(.sequence([
+            .group([.move(to: SCNVector3(dest.x, dest.y, dest.z), duration: duration), .scale(to: 0.2, duration: duration)]),
+            .removeFromParentNode()]))
     }
 
     // MARK: Save / restore
@@ -285,7 +357,7 @@ final class GameWorld {
 
     private func buildScene() {
         let W = layout.width, D = layout.depth
-        let root = scene.rootNode
+        let root = SCNNode()   // static geometry, merged into one mesh below
         let theme = level.theme
 
         let floor = SCNPlane(width: CGFloat(W), height: CGFloat(D))
@@ -322,7 +394,8 @@ final class GameWorld {
         closed.constraints = nil
         closed.eulerAngles.y = Float.pi
         closed.position = SCNVector3((layout.doorMinX + layout.doorMaxX) / 2, 1.5, D - 0.02)
-        root.addChildNode(closed)
+        closed.geometry?.firstMaterial?.readsFromDepthBuffer = true
+        scene.rootNode.addChildNode(closed)
 
         func trim(_ x0: Float, _ z0: Float, _ x1: Float, _ z1: Float, y: Float, h: Float) {
             let n = Models.box(max(0.01, x1 - x0), h, max(0.01, z1 - z0), theme.trim)
@@ -342,7 +415,8 @@ final class GameWorld {
         let name = Models.billboardText(theme.name.uppercased(), color: .white, bg: UIColor(hex: theme.trim), width: 3.6, height: 0.5, fontSize: 110)
         name.constraints = nil
         name.position = SCNVector3(W / 2, 2.95, 0.03)
-        root.addChildNode(name)
+        name.geometry?.firstMaterial?.readsFromDepthBuffer = true
+        scene.rootNode.addChildNode(name)
 
         let ceil = SCNNode(geometry: SCNPlane(width: CGFloat(W), height: CGFloat(D)))
         ceil.geometry?.firstMaterial = Models.mat(0xF2F2EE)
@@ -365,26 +439,31 @@ final class GameWorld {
             lx += 3
         }
 
+        let env = root.flattenedClone()
+        Models.setCategory(env, Models.categoryNoHit)
+        scene.rootNode.addChildNode(env)
+        let worldRoot = scene.rootNode
+
         let ambient = SCNNode(); ambient.light = SCNLight()
         ambient.light!.type = .ambient
         ambient.light!.intensity = 540
         ambient.light!.color = UIColor(hex: 0xFFF8EE)
-        root.addChildNode(ambient)
+        worldRoot.addChildNode(ambient)
         let sun = SCNNode(); sun.light = SCNLight()
         sun.light!.type = .directional
         sun.light!.intensity = 600
         sun.eulerAngles = SCNVector3(Float(-1.05), Float(0.55), Float(0))
-        root.addChildNode(sun)
+        worldRoot.addChildNode(sun)
         let fill = SCNNode(); fill.light = SCNLight()
         fill.light!.type = .directional
         fill.light!.intensity = 220
         fill.eulerAngles = SCNVector3(Float(-0.6), Float.pi + 0.4, Float(0))
-        root.addChildNode(fill)
+        worldRoot.addChildNode(fill)
 
         for (i, spec) in layout.fixtures.enumerated() {
             let f = Fixture(index: i, spec: spec, shelfColor: theme.shelfColor)
             fixtures.append(f)
-            root.addChildNode(f.node)
+            worldRoot.addChildNode(f.node)
         }
 
         // Trash bin for expired stock
@@ -400,9 +479,10 @@ final class GameWorld {
         bin.addChildNode(lid)
         let binSign = Models.billboardText("EXPIRED", color: .white, bg: UIColor(hex: 0xC0392B), width: 0.7, height: 0.18, fontSize: 60)
         binSign.position.y = 1.25
+        binSign.geometry?.firstMaterial?.readsFromDepthBuffer = true
         bin.addChildNode(binSign)
         bin.position = SCNVector3(layout.bin.center.x, 0, layout.bin.center.y)
-        root.addChildNode(bin)
+        worldRoot.addChildNode(bin)
 
         // Player + held basket
         playerNode.simdPosition = SIMD3(playerPos.x, 0, playerPos.y)
@@ -417,8 +497,9 @@ final class GameWorld {
         basketNode.position = SCNVector3(0.36, -0.52, -0.8)
         basketNode.eulerAngles = SCNVector3(Float(0.25), Float(-0.25), Float(0))
         cameraNode.addChildNode(basketNode)
-        root.addChildNode(playerNode)
-        root.addChildNode(highlightNode)
+        worldRoot.addChildNode(playerNode)
+        worldRoot.addChildNode(highlightNode)
+        worldRoot.addChildNode(hitRoot)
     }
 
     // MARK: Per-frame
@@ -436,6 +517,7 @@ final class GameWorld {
         time += dt
         if !completed && !skills.isActive(.freeze, now: time) { elapsed += dt }
         updatePlayer(dt: Float(dt), move: move)
+        rebuildChunks()
         if scannerCategory != nil && !skills.isActive(.scanner, now: time) {
             scannerCategory = nil
             refreshSigns()
@@ -466,7 +548,10 @@ final class GameWorld {
         let bob: Float = (d.headBob && !d.reduceMotion && moving) ? sin(bobPhase) * 0.032 * min(1, simd_length(mv)) : 0
         cameraNode.simdPosition = SIMD3(0, eyeHeight + bob, 0)
         cameraNode.simdEulerAngles = SIMD3(pitch, 0, 0)
-        cameraNode.camera?.fieldOfView = CGFloat(d.fieldOfView)
+        if d.fieldOfView != lastFOV {
+            lastFOV = d.fieldOfView
+            cameraNode.camera?.fieldOfView = CGFloat(d.fieldOfView)
+        }
     }
 
     func resolveCollisions(_ p: SIMD2<Float>) -> SIMD2<Float> {

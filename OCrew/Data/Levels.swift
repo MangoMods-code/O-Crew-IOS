@@ -46,38 +46,31 @@ enum Levels {
     static let themes: [StoreTheme] = [
         StoreTheme(id: "grocery", name: "Corner Grocery",
                    blurb: "A tiny neighborhood grocer after a rough night. Pantry, snacks, dairy and frozen.",
-                   products: ["cereal", "pasta", "soup", "beans", "rice", "chips", "cookies", "peanutbutter",
-                              "water", "soda", "milk", "eggs", "yogurt", "juice", "pizza", "icecream"],
+                   products: ["cereal", "bread", "soup", "chips", "water", "milk", "pizza", "ketchup", "pasta", "cookies", "soda", "eggs", "icecream", "flour", "beans", "crackers", "juice", "yogurt", "candy", "mustard", "butter", "fries", "rice", "sugar", "peanutbutter", "bagels", "tea", "granola", "mayo", "sausages", "waffles", "oatmeal", "hotsauce", "bakingsoda", "bacon", "nuggets"],
                    floor: 0xE9E4D8, floorAlt: 0xD8D1C2, wall: 0xF3EBDD, trim: 0x2E7D4F, shelfColor: 0xDADDE1),
         StoreTheme(id: "hardware", name: "Hardware Depot",
                    blurb: "Screws, paint and power tools everywhere. Sort it by department.",
-                   products: ["paint", "screws", "nails", "tape", "bulbs", "batteries", "glue", "sandpaper",
-                              "cord", "toolbox", "workgloves", "lube", "hammer"],
+                   products: ["paint", "screws", "bulbs", "hammer", "tape", "wrench", "padlock", "drill", "nails", "batteries", "spraypaint", "sealant", "flashlight", "screwdriver", "zipties", "cord", "brush", "glue", "tapemeasure", "chain", "hinges", "saw", "sandpaper", "roller", "toolbox", "workgloves", "lube"],
                    floor: 0xBFC5CA, floorAlt: 0xAEB5BB, wall: 0xE5E2DA, trim: 0xD35400, shelfColor: 0xE67E22),
         StoreTheme(id: "pharmacy", name: "Neighborhood Pharmacy",
                    blurb: "Small boxes, lots of them, and they all look alike. Read the signs carefully.",
-                   products: ["vitamins", "painrelief", "coldmed", "bandages", "cotton", "shampoo", "toothpaste",
-                              "sunscreen", "lotion", "deodorant", "water", "energydrink", "juice"],
+                   products: ["vitamins", "toothpaste", "bandages", "shampoo", "water", "painrelief", "mouthwash", "cotton", "handsoap", "icepack", "coldmed", "floss", "gauze", "sunscreen", "energydrink", "allergy", "toothbrush", "lotion", "deodorant", "coughsyrup", "thermometer", "razors", "juice", "insulin"],
                    floor: 0xF4F6F7, floorAlt: 0xE5E8E8, wall: 0xFBFCFC, trim: 0x2471A3, shelfColor: 0xF8F9F9),
         StoreTheme(id: "electronics", name: "Electronics Outlet",
                    blurb: "Cables, cases, chargers. Somebody dropped every box in the building.",
-                   products: ["charger", "cable", "powerbank", "earbuds", "headphones", "game", "phonecase",
-                              "sdcard", "mouse", "keyboard", "batteries", "energydrink", "soda"],
+                   products: ["charger", "cable", "earbuds", "game", "phonecase", "hdmi", "mouse", "energydrink", "speaker", "controller", "powerbank", "sdcard", "webcam", "adapter", "keyboard", "headphones", "usbdrive", "smartwatch", "batteries", "headset", "usbcable", "fitband", "soda"],
                    floor: 0x2C3E50, floorAlt: 0x273746, wall: 0xD6DBDF, trim: 0x8E44AD, shelfColor: 0x1C2833),
         StoreTheme(id: "pets", name: "Pet Supply Co.",
                    blurb: "The dogs got loose in the stockroom. Heavy bags, tiny cans.",
-                   products: ["dogfood", "treats", "leash", "catfood", "litter", "pettoy", "fishfood", "birdseed", "frozenpet"],
+                   products: ["dogfood", "catfood", "treats", "pettoy", "fishfood", "frozenpet", "litter", "leash", "catnip", "dogshampoo", "hamsterfood", "petbowl", "birdseed", "cattoy", "petbrush", "aquafilter", "bedding"],
                    floor: 0xEDE0C8, floorAlt: 0xE0D0B3, wall: 0xFFF8EC, trim: 0x16A085, shelfColor: 0xF0F3F4),
         StoreTheme(id: "garden", name: "Garden Center",
                    blurb: "Spring rush aftermath. Seeds, soil, pots and tools in one big pile.",
-                   products: ["seeds", "soil", "fertilizer", "pot", "gardengloves", "trowel", "hose", "plantspray", "birdseed"],
+                   products: ["seeds", "soil", "pot", "trowel", "fertilizer", "wateringcan", "bugspray", "gardengloves", "shears", "flowerbulbs", "hose", "mulch", "plantspray", "sprinkler", "rake", "grassseed", "plantlabels", "seedtray", "slugpellets", "birdseed"],
                    floor: 0xB9A88E, floorAlt: 0xAA987D, wall: 0xF2EEE3, trim: 0x1E8449, shelfColor: 0x7E5109),
         StoreTheme(id: "supermarket", name: "City Supermarket",
                    blurb: "The big one. Every department, every aisle, every item on the floor.",
-                   products: ["cereal", "pasta", "soup", "beans", "rice", "coffee", "oil", "peanutbutter", "chips",
-                              "cookies", "water", "soda", "energydrink", "milk", "eggs", "yogurt", "cheese", "juice",
-                              "pizza", "icecream", "frozenveg", "shampoo", "toothpaste", "painrelief", "deodorant",
-                              "catfood", "dogfood", "batteries", "bulbs"],
+                   products: ["cereal", "bread", "soup", "chips", "water", "milk", "pizza", "shampoo", "catfood", "ketchup", "pasta", "cookies", "soda", "eggs", "icecream", "toothpaste", "dogfood", "batteries", "flour", "beans", "crackers", "juice", "yogurt", "candy", "painrelief", "mustard", "butter", "fries", "rice", "sugar", "bulbs", "peanutbutter", "coffee", "oil", "bagels", "tea", "granola", "mayo", "sausages", "waffles", "energydrink", "cheese", "frozenveg", "deodorant", "handsoap", "treats", "oatmeal", "bacon", "nuggets", "mouthwash"],
                    floor: 0xECEFF1, floorAlt: 0xDDE2E5, wall: 0xFAFAFA, trim: 0xC0392B, shelfColor: 0xE5E8E8),
     ]
 
@@ -88,18 +81,18 @@ enum Levels {
             for stage in 1...3 {
                 let count: Int
                 switch stage {
-                case 1: count = max(4, Int((Double(n) * 0.6).rounded(.up)))
-                case 2: count = max(5, Int((Double(n) * 0.85).rounded(.up)))
+                case 1: count = max(6, Int((Double(n) * 0.5).rounded(.up)))
+                case 2: count = max(8, Int((Double(n) * 0.75).rounded(.up)))
                 default: count = n
                 }
-                let big = n > 20
+                let big = n > 30
                 out.append(OrgLevel(
                     theme: theme, stage: stage, index: out.count,
                     products: Array(theme.products.prefix(count)),
-                    slotsPerProduct: stage == 3 && !big ? 2 : 1,
-                    fill: stage == 1 ? 0.6 : stage == 2 ? 0.75 : 0.65,
+                    slotsPerProduct: stage == 3 && !big ? 3 : 2,
+                    fill: stage == 1 ? 0.7 : stage == 2 ? 0.75 : 0.7,
                     misplaced: stage == 1 ? 0 : stage == 2 ? 0.25 : 0.3,
-                    expired: stage == 3 ? 4 + n / 3 : 0))
+                    expired: stage == 3 ? 6 + n / 2 : 0))
             }
         }
         return out

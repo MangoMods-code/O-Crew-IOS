@@ -13,7 +13,7 @@ Every push to `main` builds a fresh unsigned `.ipa` automatically (see `.github/
 
 ## What's in it
 
-- **21 levels**: 7 stores (Corner Grocery, Hardware Depot, Neighborhood Pharmacy, Electronics Outlet, Pet Supply Co., Garden Center, City Supermarket) × 3 stages each: *Morning Mess*, *Wrong Aisles* (items start on the wrong shelves) and *Total Chaos* (bigger mess plus expired stock for the trash).
+- **21 levels** (about 90–650 items each): 7 stores (Corner Grocery, Hardware Depot, Neighborhood Pharmacy, Electronics Outlet, Pet Supply Co., Garden Center, City Supermarket) × 3 stages each: *Morning Mess*, *Wrong Aisles* (items start on the wrong shelves) and *Total Chaos* (bigger mess plus expired stock for the trash).
 - **Signs-only sorting**: aisle signs and shelf-row labels tell you the section. No outlines. Identical items go together, and cold stuff goes in fridges and freezers.
 - **Basket** with limited space. Choose what to place from the basket bar.
 - **Skills with cooldowns**: Sprint, Magnet, Scanner, Auto-Sort, Time Freeze.

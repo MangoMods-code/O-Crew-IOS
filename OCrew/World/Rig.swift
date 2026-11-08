@@ -22,8 +22,8 @@ final class FirstPersonRig {
         let skinMat = Models.freshMat(skin)
 
         // ---- Right arm (reaching hand)
-        let rElbow = SIMD3<Float>(0.44, -0.66, -0.16)
-        let rWrist = SIMD3<Float>(0.24, -0.36, -0.55)
+        let rElbow = SIMD3<Float>(0.42, -0.44, -0.14)
+        let rWrist = SIMD3<Float>(0.25, -0.21, -0.5)
         let rMid = rElbow + (rWrist - rElbow) * 0.55
         rightArm.addChildNode(Self.limb(from: rElbow + SIMD3(0.05, -0.08, 0.12), to: rMid, radius: 0.058, mat: sleeveMat))
         rightArm.addChildNode(Self.limb(from: rMid - (rWrist - rElbow) * 0.03, to: rMid + (rWrist - rElbow) * 0.03, radius: 0.06, mat: cuffMat))
@@ -35,8 +35,8 @@ final class FirstPersonRig {
         root.addChildNode(rightArm)
 
         // ---- Left arm (holds the basket handle)
-        let lElbow = SIMD3<Float>(-0.46, -0.7, -0.14)
-        let lWrist = SIMD3<Float>(-0.3, -0.47, -0.5)
+        let lElbow = SIMD3<Float>(-0.46, -0.46, -0.12)
+        let lWrist = SIMD3<Float>(-0.31, -0.25, -0.47)
         let lMid = lElbow + (lWrist - lElbow) * 0.55
         leftArm.addChildNode(Self.limb(from: lElbow + SIMD3(-0.05, -0.08, 0.12), to: lMid, radius: 0.058, mat: sleeveMat))
         leftArm.addChildNode(Self.limb(from: lMid - (lWrist - lElbow) * 0.03, to: lMid + (lWrist - lElbow) * 0.03, radius: 0.06, mat: cuffMat))

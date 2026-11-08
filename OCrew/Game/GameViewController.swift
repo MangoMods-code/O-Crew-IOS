@@ -41,6 +41,7 @@ final class GameViewController: UIViewController {
         super.viewDidLoad()
         view.backgroundColor = .black
         world = GameWorld(level: level, save: ProgressStore.shared.save(for: level.id))
+        ProductIcons.warm(level.products)
 
         scnView.frame = view.bounds
         scnView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
@@ -128,6 +129,8 @@ final class GameViewController: UIViewController {
         guard let w = world else { return }
         hud.basketBar.update(groups: w.basketGroups, selected: w.selectedKey, used: w.basket.count, capacity: w.capacity)
         hud.setNeedsLayout()
+        hud.layoutIfNeeded()
+        hud.basketBar.reveal(w.selectedKey)
     }
 
     // MARK: Loop

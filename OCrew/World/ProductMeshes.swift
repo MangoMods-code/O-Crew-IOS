@@ -67,8 +67,13 @@ final class ProductMesh {
         let front: (z: Float, y: Float)
         switch p.shape {
         case let .box(w, h, d):
-            parts = box(w, h, d, top: base)
-            front = (d / 2, h * 0.5)
+            if isFlat(p) {
+                parts = flatBox(w, h, d)
+                front = (d / 2, h * 0.5)
+            } else {
+                parts = box(w, h, d, top: base)
+                front = (d / 2, h * 0.5)
+            }
         case let .bag(w, h, d):
             parts = bag(w, h, d)
             front = (d / 2, h * 0.5)
@@ -113,6 +118,24 @@ final class ProductMesh {
         tp.quad(SIMD3(-x, h, z), SIMD3(x, h, z), SIMD3(x, h, -z), SIMD3(-x, h, -z), n: SIMD3(0, 1, 0))
         tp.quad(SIMD3(-x, 0, -z), SIMD3(x, 0, -z), SIMD3(x, 0, z), SIMD3(-x, 0, z), n: SIMD3(0, -1, 0))
         return [lab, sd, tp]
+    }
+
+    /// Flat packs (pizza, bacon, butter…) lie down, so their art goes on the big top face.
+    static func isFlat(_ p: Product) -> Bool {
+        if case let .box(w, h, d) = p.shape { return h < 0.6 * min(w, d) }
+        return false
+    }
+
+    static func flatBox(_ w: Float, _ h: Float, _ d: Float) -> [MeshPart] {
+        let x = w / 2, z = d / 2
+        var lab = MeshPart(material: label), sd = MeshPart(material: side)
+        lab.quad(SIMD3(-x, h, z), SIMD3(x, h, z), SIMD3(x, h, -z), SIMD3(-x, h, -z), n: SIMD3(0, 1, 0))
+        lab.quad(SIMD3(-x, 0, -z), SIMD3(x, 0, -z), SIMD3(x, 0, z), SIMD3(-x, 0, z), n: SIMD3(0, -1, 0))
+        sd.quad(SIMD3(-x, 0, z), SIMD3(x, 0, z), SIMD3(x, h, z), SIMD3(-x, h, z), n: SIMD3(0, 0, 1))
+        sd.quad(SIMD3(x, 0, -z), SIMD3(-x, 0, -z), SIMD3(-x, h, -z), SIMD3(x, h, -z), n: SIMD3(0, 0, -1))
+        sd.quad(SIMD3(x, 0, z), SIMD3(x, 0, -z), SIMD3(x, h, -z), SIMD3(x, h, z), n: SIMD3(1, 0, 0))
+        sd.quad(SIMD3(-x, 0, -z), SIMD3(-x, 0, z), SIMD3(-x, h, z), SIMD3(-x, h, -z), n: SIMD3(-1, 0, 0))
+        return [lab, sd]
     }
 
     /// Pillow-shaped snack bag with crimped seals top and bottom.
@@ -245,6 +268,30 @@ final class ProductMesh {
     }
 }
 
+/// Soft contact shadow under floor items (one shared material, merged per floor chunk).
+@MainActor
+enum ContactShadow {
+    static let mesh: ProductMesh = {
+        var q = MeshPart(material: 0)
+        q.quad(SIMD3(-0.5, 0, 0.5), SIMD3(0.5, 0, 0.5), SIMD3(0.5, 0, -0.5), SIMD3(-0.5, 0, -0.5), n: SIMD3(0, 1, 0))
+        let size = CGSize(width: 64, height: 64)
+        let img = UIGraphicsImageRenderer(size: size).image { ctx in
+            let colors = [UIColor(white: 0, alpha: 0.55).cgColor, UIColor(white: 0, alpha: 0).cgColor] as CFArray
+            if let g = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(), colors: colors, locations: [0, 1]) {
+                ctx.cgContext.drawRadialGradient(g, startCenter: CGPoint(x: 32, y: 32), startRadius: 0,
+                                                 endCenter: CGPoint(x: 32, y: 32), endRadius: 32, options: [])
+            }
+        }
+        let m = SCNMaterial()
+        m.diffuse.contents = img
+        m.lightingModel = .constant
+        m.writesToDepthBuffer = false
+        m.blendMode = .alpha
+        m.transparencyMode = .aOne
+        return ProductMesh(parts: [q], materials: [m])
+    }()
+}
+
 /// Generated packaging artwork (fictional brands only).
 @MainActor
 enum Packaging {
@@ -287,8 +334,9 @@ enum Packaging {
         default: round = false
         }
         let s = p.shape.size
+        let faceH = ProductMesh.isFlat(p) ? s.d : s.h      // flat packs show their top
         let size = round ? CGSize(width: 512, height: 256)
-                         : CGSize(width: 256, height: CGFloat(max(96, min(512, 256 * s.h / max(0.01, s.w)))))
+                         : CGSize(width: 256, height: CGFloat(max(96, min(512, 256 * faceH / max(0.01, s.w)))))
         let img = UIGraphicsImageRenderer(size: size).image { ctx in
             let c = ctx.cgContext
             let panelW = round ? size.width / 2 : size.width

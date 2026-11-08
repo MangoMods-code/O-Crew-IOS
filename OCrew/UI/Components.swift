@@ -83,7 +83,7 @@ struct ProductSwatch: View {
     let product: Product
     var size: CGFloat = 30
     var body: some View {
-        Image(uiImage: Models.labelImage(for: product))
+        Image(uiImage: ProductIcons.icon(for: product))
             .resizable()
             .interpolation(.none)
             .frame(width: size, height: size)

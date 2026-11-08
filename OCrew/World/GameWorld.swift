@@ -20,6 +20,7 @@ struct BasketGroup: Equatable {
 final class FloorChunk {
     var items: [Int] = []
     var visual: SCNNode?
+    var shadow: SCNNode?
     var dirty = false
 }
 
@@ -261,8 +262,11 @@ final class GameWorld {
             c.dirty = false
             c.visual?.removeFromParentNode()
             c.visual = nil
+            c.shadow?.removeFromParentNode()
+            c.shadow = nil
             guard !c.items.isEmpty else { continue }
             let batch = MeshBatcher()
+            let shadows = MeshBatcher()
             for id in c.items {
                 guard let it = floorItems[id], let p = Catalog.product(it.product) else { continue }
                 var m = Models.translate(it.floorPos.x, 0, it.floorPos.y) * Models.rotate(it.yaw, SIMD3(0, 1, 0))
@@ -270,6 +274,23 @@ final class GameWorld {
                     m = m * Models.translate(0, p.shape.size.w / 2, 0) * Models.rotate(Float.pi / 2, SIMD3(0, 0, 1))
                 }
                 batch.add(Models.template(p, expired: it.expired), transform: m)
+                // Contact shadow footprint
+                let sz = p.shape.size
+                let fx = (it.tipped ? sz.h : sz.w) + 0.08
+                let fz = sz.d + 0.08
+                let center = it.tipped ? SIMD3<Float>(-sz.h / 2, 0, 0) : SIMD3<Float>(0, 0, 0)
+                var sm = Models.translate(it.floorPos.x, 0.003, it.floorPos.y) * Models.rotate(it.yaw, SIMD3(0, 1, 0))
+                sm = sm * Models.translate(center.x, 0, 0)
+                var scale = matrix_identity_float4x4
+                scale.columns.0.x = fx * 1.25
+                scale.columns.2.z = fz * 1.25
+                shadows.add(ContactShadow.mesh, transform: sm * scale)
+            }
+            if let sh = shadows.build() {
+                sh.renderingOrder = 5
+                Models.setCategory(sh, Models.categoryNoHit)
+                scene.rootNode.addChildNode(sh)
+                c.shadow = sh
             }
             let flat: SCNNode
             if let merged = batch.build() {

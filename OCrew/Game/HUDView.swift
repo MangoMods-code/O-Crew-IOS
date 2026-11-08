@@ -124,13 +124,14 @@ final class PillLabel: UILabel {
     }
 }
 
-/// Row of basket contents; tap one to choose what you'll place next.
+/// Row of basket contents; tap one to choose what you'll place next. Scrolls sideways when full.
 final class BasketBar: UIView {
     var onSelect: ((String) -> Void)?
     private var buttons: [UIButton] = []
     private var keys: [String] = []
     private let countLabel = UILabel()
     private let bg = UIView()
+    private let scroll = UIScrollView()
     var scale: CGFloat = 1
     var showCounts = true
     var colorblind: ColorblindMode = .off
@@ -145,6 +146,10 @@ final class BasketBar: UIView {
         countLabel.textAlignment = .center
         countLabel.font = .monospacedDigitSystemFont(ofSize: 13, weight: .heavy)
         addSubview(countLabel)
+        scroll.showsHorizontalScrollIndicator = false
+        scroll.alwaysBounceHorizontal = true
+        scroll.delaysContentTouches = false
+        addSubview(scroll)
     }
     required init?(coder: NSCoder) { fatalError() }
 
@@ -158,10 +163,11 @@ final class BasketBar: UIView {
             keys = newKeys
             for g in groups {
                 let b = UIButton(type: .custom)
-                if let p = Catalog.product(g.product) { b.setImage(Models.labelImage(for: p), for: .normal) }
+                if let p = Catalog.product(g.product) { b.setImage(ProductIcons.icon(for: p, expired: g.expired), for: .normal) }
                 b.imageView?.contentMode = .scaleAspectFill
                 b.clipsToBounds = true
                 b.layer.cornerRadius = 10
+                b.backgroundColor = UIColor(hex: 0xEEF0F2)
                 let key = g.key
                 b.addAction(UIAction { [weak self] _ in self?.onSelect?(key) }, for: .touchUpInside)
                 let badge = UILabel()
@@ -169,7 +175,7 @@ final class BasketBar: UIView {
                 badge.font = .systemFont(ofSize: 12, weight: .black)
                 badge.textColor = .white
                 badge.textAlignment = .center
-                badge.backgroundColor = UIColor(white: 0, alpha: 0.7)
+                badge.backgroundColor = UIColor(white: 0, alpha: 0.72)
                 badge.layer.cornerRadius = 8
                 badge.layer.masksToBounds = true
                 b.addSubview(badge)
@@ -182,7 +188,7 @@ final class BasketBar: UIView {
                     x.clipsToBounds = true
                     b.addSubview(x)
                 }
-                addSubview(b)
+                scroll.addSubview(b)
                 buttons.append(b)
             }
         }
@@ -191,7 +197,6 @@ final class BasketBar: UIView {
             let sel = g.key == selected
             b.layer.borderWidth = sel ? 3 : 1
             b.layer.borderColor = sel ? UIColor(hex: Theme.brand).cgColor : UIColor(white: 1, alpha: 0.35).cgColor
-            b.alpha = sel ? 1 : 0.8
             if let badge = b.viewWithTag(77) as? UILabel {
                 badge.text = "\(g.count)"
                 badge.isHidden = !showCounts
@@ -202,7 +207,13 @@ final class BasketBar: UIView {
 
     var preferredWidth: CGFloat {
         let s = 46 * scale
-        return CGFloat(max(1, buttons.count)) * (s + 6) + 56 * scale
+        return CGFloat(max(1, buttons.count)) * (s + 6) + 58 * scale
+    }
+
+    /// Keeps the selected item in view.
+    func reveal(_ key: String?) {
+        guard let key = key, let i = keys.firstIndex(of: key), i < buttons.count else { return }
+        scroll.scrollRectToVisible(buttons[i].frame.insetBy(dx: -8, dy: 0), animated: true)
     }
 
     override func layoutSubviews() {
@@ -210,7 +221,8 @@ final class BasketBar: UIView {
         let s = 46 * scale
         bg.frame = bounds
         countLabel.frame = CGRect(x: 6, y: 0, width: 44 * scale, height: bounds.height)
-        var x = 52 * scale
+        scroll.frame = CGRect(x: 52 * scale, y: 0, width: max(0, bounds.width - 52 * scale - 6), height: bounds.height)
+        var x: CGFloat = 0
         for b in buttons {
             b.frame = CGRect(x: x, y: (bounds.height - s) / 2, width: s, height: s)
             if let badge = b.viewWithTag(77) {
@@ -221,6 +233,7 @@ final class BasketBar: UIView {
             }
             x += s + 6
         }
+        scroll.contentSize = CGSize(width: max(0, x - 6), height: bounds.height)
     }
 }
 
@@ -393,10 +406,6 @@ final class HUDView: UIView {
                                    width: promptSize.width, height: promptSize.height)
         promptLabel.layer.cornerRadius = promptSize.height / 2
 
-        // Basket bar bottom center
-        let bh = 58 * basketBar.scale
-        let bw = min(basketBar.preferredWidth, bounds.width * 0.5)
-        basketBar.frame = CGRect(x: bounds.midX - bw / 2, y: bounds.height - max(inset.bottom, 8) - bh - 6, width: bw, height: bh)
 
         // Action cluster
         let big = 78 * bs, mid = 52 * bs, small = 48 * bs
@@ -415,6 +424,19 @@ final class HUDView: UIView {
             let yy = center.y + sin(a) * radius
             b.frame = CGRect(x: x - small / 2, y: yy - small / 2, width: small, height: small)
         }
+
+        // Basket bar: fits between the move-stick zone and the action buttons (scrolls if needed).
+        let bh = 58 * basketBar.scale
+        let stickZone = 190 * hs
+        var clusterEdge = d.leftHanded ? interactButton.frame.maxX : interactButton.frame.minX
+        for b in [dropButton] + Array(skillButtons.values) where b.frame.maxY > bounds.height - bh - 30 {
+            clusterEdge = d.leftHanded ? max(clusterEdge, b.frame.maxX) : min(clusterEdge, b.frame.minX)
+        }
+        let lo = d.leftHanded ? clusterEdge + 12 : left + stickZone
+        let hi = d.leftHanded ? right - stickZone : clusterEdge - 12
+        let avail = max(120, hi - lo)
+        let bw = min(basketBar.preferredWidth, avail)
+        basketBar.frame = CGRect(x: lo + (avail - bw) / 2, y: bounds.height - max(inset.bottom, 8) - bh - 6, width: bw, height: bh)
     }
 
     // MARK: Updates

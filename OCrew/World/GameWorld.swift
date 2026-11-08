@@ -271,21 +271,36 @@ final class GameWorld {
             c.visual?.removeFromParentNode()
             c.visual = nil
             guard !c.items.isEmpty else { continue }
-            let container = SCNNode()
+            let batch = MeshBatcher()
             for id in c.items {
                 guard let it = floorItems[id], let p = Catalog.product(it.product) else { continue }
-                let holder = SCNNode()
-                holder.simdPosition = SIMD3(it.floorPos.x, 0, it.floorPos.y)
-                holder.simdEulerAngles = SIMD3(0, it.yaw, 0)
-                let m = Models.productNode(p, expired: it.expired)
+                var m = Models.translate(it.floorPos.x, 0, it.floorPos.y) * Models.rotate(it.yaw, SIMD3(0, 1, 0))
                 if it.tipped {
-                    m.eulerAngles.z = Float.pi / 2
-                    m.position.y = p.shape.size.w / 2
+                    m = m * Models.translate(0, p.shape.size.w / 2, 0) * Models.rotate(Float.pi / 2, SIMD3(0, 0, 1))
                 }
-                holder.addChildNode(m)
-                container.addChildNode(holder)
+                batch.add(Models.template(p, expired: it.expired), transform: m)
             }
-            let flat = Models.merged(container)
+            let flat: SCNNode
+            if let merged = batch.build() {
+                flat = merged
+            } else {
+                // Fallback: individual models (slower, but always visible).
+                let container = SCNNode()
+                for id in c.items {
+                    guard let it = floorItems[id], let p = Catalog.product(it.product) else { continue }
+                    let holder = SCNNode()
+                    holder.simdPosition = SIMD3(it.floorPos.x, 0, it.floorPos.y)
+                    holder.simdEulerAngles = SIMD3(0, it.yaw, 0)
+                    let m = Models.productNode(p, expired: it.expired)
+                    if it.tipped {
+                        m.eulerAngles.z = Float.pi / 2
+                        m.position.y = p.shape.size.w / 2
+                    }
+                    holder.addChildNode(m)
+                    container.addChildNode(holder)
+                }
+                flat = container
+            }
             Models.setCategory(flat, Models.categoryNoHit)
             scene.rootNode.addChildNode(flat)
             c.visual = flat

@@ -159,15 +159,16 @@ enum Models {
         let accent = mat(p.accent)
         switch p.shape {
         case let .box(w, h, d):
-            let g = SCNBox(width: CGFloat(w), height: CGFloat(h), length: CGFloat(d), chamferRadius: 0.004)
+            let g = SCNBox(width: CGFloat(w), height: CGFloat(h), length: CGFloat(d), chamferRadius: 0)
             g.materials = [label, base, label, base, base, base]
             let n = SCNNode(geometry: g); n.position.y = h / 2; root.addChildNode(n)
         case let .bag(w, h, d):
             let g = SCNBox(width: CGFloat(w), height: CGFloat(h), length: CGFloat(d), chamferRadius: CGFloat(min(w, d) * 0.4))
+            g.chamferSegmentCount = 2
             g.materials = [label, base, label, base, base, base]
             let n = SCNNode(geometry: g); n.position.y = h / 2; root.addChildNode(n)
         case let .carton(w, h, d):
-            let g = SCNBox(width: CGFloat(w), height: CGFloat(h), length: CGFloat(d), chamferRadius: 0.002)
+            let g = SCNBox(width: CGFloat(w), height: CGFloat(h), length: CGFloat(d), chamferRadius: 0)
             g.materials = [label, base, label, base, base, base]
             let n = SCNNode(geometry: g); n.position.y = h / 2; root.addChildNode(n)
             let roof = SCNPyramid(width: CGFloat(w), height: 0.04, length: CGFloat(d))
@@ -175,16 +176,16 @@ enum Models {
             let r = SCNNode(geometry: roof); r.position.y = h; root.addChildNode(r)
         case let .can(r, h):
             let g = SCNCylinder(radius: CGFloat(r), height: CGFloat(h))
-            g.radialSegmentCount = 16
+            g.radialSegmentCount = 12
             g.materials = [label, accent, base]
             let n = SCNNode(geometry: g); n.position.y = h / 2; root.addChildNode(n)
         case let .jar(r, h):
             let body = SCNCylinder(radius: CGFloat(r), height: CGFloat(h * 0.82))
-            body.radialSegmentCount = 16
+            body.radialSegmentCount = 12
             body.materials = [label, base, base]
             let b = SCNNode(geometry: body); b.position.y = h * 0.41; root.addChildNode(b)
             let lid = SCNCylinder(radius: CGFloat(r * 1.04), height: CGFloat(h * 0.18))
-            lid.radialSegmentCount = 16
+            lid.radialSegmentCount = 12
             lid.firstMaterial = accent
             let l = SCNNode(geometry: lid); l.position.y = h * 0.91; root.addChildNode(l)
         case let .bottle(r, h):
@@ -207,6 +208,20 @@ enum Models {
         }
         productTemplates[p.id] = root
         return root
+    }
+
+    static func template(_ p: Product, expired: Bool) -> SCNNode {
+        expired ? expiredTemplate(p) : productTemplate(p)
+    }
+
+    static func translate(_ x: Float, _ y: Float, _ z: Float) -> simd_float4x4 {
+        var m = matrix_identity_float4x4
+        m.columns.3 = SIMD4(x, y, z, 1)
+        return m
+    }
+
+    static func rotate(_ angle: Float, _ axis: SIMD3<Float>) -> simd_float4x4 {
+        simd_float4x4(simd_quatf(angle: angle, axis: axis))
     }
 
     static func productNode(_ p: Product, expired: Bool = false) -> SCNNode {

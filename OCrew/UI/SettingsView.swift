@@ -52,6 +52,7 @@ struct SettingsView: View {
             ToggleRow(title: "Skill & button labels", isOn: $store.display.showSkillLabels)
             ToggleRow(title: "Notifications", isOn: $store.display.showToasts)
             ToggleRow(title: "FPS counter", isOn: $store.display.showFPS)
+            ToggleRow(title: "Performance stats (draw calls, CPU/GPU time)", isOn: $store.display.perfStats)
         }
         Section2("In the store") {
             ToggleRow(title: "Shelf row labels", isOn: $store.display.showRowLabels)

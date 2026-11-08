@@ -117,6 +117,7 @@ final class GameViewController: UIViewController {
     private func applySettings(_ d: DisplaySettings) {
         hud.apply(d)
         controls.apply(d)
+        scnView.showsStatistics = d.perfStats
         world?.refreshSigns()
         world?.refreshTags()
         if let link = displayLink { configureFrameRate(link) }

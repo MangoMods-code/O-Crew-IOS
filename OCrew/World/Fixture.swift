@@ -105,16 +105,31 @@ final class Slot {
         let stack = p.shape.stackable ? max(1, min(2, Int((height - 0.06) / (s.h + 0.004)))) : 1
         let cellW = (width - 0.02) / Float(cols)
         let z = -min(depth * 0.35, s.d / 2 + 0.06)   // a neat front-facing row
+        let batch = MeshBatcher()
         let container = SCNNode()
+        let tmpl = Models.template(p, expired: first.expired)
         for i in 0..<items.count {
             let col = (i / stack) % cols
             let layer = i % stack
             let x = -(width - 0.02) / 2 + (Float(col) + 0.5) * cellW
-            let unit = Models.productNode(p, expired: first.expired)
-            unit.position = SCNVector3(x, Float(layer) * (s.h + 0.004) + 0.002, z)
-            container.addChildNode(unit)
+            let y = Float(layer) * (s.h + 0.004) + 0.002
+            batch.add(tmpl, transform: Models.translate(x, y, z))
         }
-        let flat = Models.merged(container)
+        let flat: SCNNode
+        if let merged = batch.build() {
+            flat = merged
+        } else {
+            for i in 0..<items.count {
+                let col = (i / stack) % cols
+                let layer = i % stack
+                let x = -(width - 0.02) / 2 + (Float(col) + 0.5) * cellW
+                let unit = Models.productNode(p, expired: first.expired)
+                unit.position = SCNVector3(x, Float(layer) * (s.h + 0.004) + 0.002, z)
+                container.addChildNode(unit)
+            }
+            flat = container
+        }
+        Models.setCategory(flat, Models.categoryNoHit)   // taps go to the slot's hit box
         node.addChildNode(flat)
         contentNode = flat
     }

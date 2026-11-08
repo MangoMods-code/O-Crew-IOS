@@ -84,6 +84,7 @@ struct DisplaySettings: Codable, Equatable {
     var showSkillLabels = true
     var showToasts = true
     var showFPS = false
+    var perfStats = false
     var basketBarScale: Double = 1.0
     var basketCounts = true
     // World labels

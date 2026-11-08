@@ -22,6 +22,8 @@ final class FloorChunk {
     var visual: SCNNode?
     var shadow: SCNNode?
     var dirty = false
+    var baked: [Int: MeshBatcher.Baked] = [:]
+    var bakedShadow: [Int: MeshBatcher.Baked] = [:]
 }
 
 @MainActor
@@ -45,6 +47,7 @@ final class GameWorld {
     var targetYaw: Float = 0
     var targetPitch: Float = -0.25
     var bobPhase: Float = 0
+    var velocity = SIMD2<Float>(0, 0)
 
     // MARK: Items
     var items: [Int: Item] = [:]
@@ -245,6 +248,8 @@ final class GameWorld {
         it.node = nil
         if let c = chunks[it.chunk] {
             c.items.removeAll { $0 == it.id }
+            c.baked[it.id] = nil
+            c.bakedShadow[it.id] = nil
             c.dirty = true
             chunksDirty = true
         }
@@ -254,11 +259,14 @@ final class GameWorld {
         Int(floor(p.x / 4)) * 1000 + Int(floor(p.y / 4))
     }
 
-    /// Rebuilds the merged meshes of any chunk that changed.
-    func rebuildChunks() {
+    /// Rebuilds the merged meshes of chunks that changed. During play at most `limit` chunks
+    /// are rebuilt per frame so a big Magnet pull never causes a hitch.
+    func rebuildChunks(limit: Int = .max) {
         guard chunksDirty else { return }
-        chunksDirty = false
+        var done = 0
         for c in chunks.values where c.dirty {
+            if done >= limit { return }   // leave chunksDirty set; finish next frame
+            done += 1
             c.dirty = false
             c.visual?.removeFromParentNode()
             c.visual = nil
@@ -269,22 +277,29 @@ final class GameWorld {
             let shadows = MeshBatcher()
             for id in c.items {
                 guard let it = floorItems[id], let p = Catalog.product(it.product) else { continue }
-                var m = Models.translate(it.floorPos.x, 0, it.floorPos.y) * Models.rotate(it.yaw, SIMD3(0, 1, 0))
-                if it.tipped {
-                    m = m * Models.translate(0, p.shape.size.w / 2, 0) * Models.rotate(Float.pi / 2, SIMD3(0, 0, 1))
+                if c.baked[id] == nil {
+                    var m = Models.translate(it.floorPos.x, 0, it.floorPos.y) * Models.rotate(it.yaw, SIMD3(0, 1, 0))
+                    if it.tipped {
+                        m = m * Models.translate(0, p.shape.size.w / 2, 0) * Models.rotate(Float.pi / 2, SIMD3(0, 0, 1))
+                    }
+                    c.baked[id] = MeshBatcher.bake(Models.template(p, expired: it.expired), transform: m)
+                    let sz = p.shape.size
+                    let fx = ((it.tipped ? sz.h : sz.w) + 0.08) * 1.25
+                    let fz = (sz.d + 0.08) * 1.25
+                    var sm = Models.translate(it.floorPos.x, 0.003, it.floorPos.y) * Models.rotate(it.yaw, SIMD3(0, 1, 0))
+                    if it.tipped { sm = sm * Models.translate(-sz.h / 2, 0, 0) }
+                    var scale = matrix_identity_float4x4
+                    scale.columns.0.x = fx
+                    scale.columns.2.z = fz
+                    c.bakedShadow[id] = MeshBatcher.bake(ContactShadow.mesh, transform: sm * scale)
                 }
-                batch.add(Models.template(p, expired: it.expired), transform: m)
-                // Contact shadow footprint
-                let sz = p.shape.size
-                let fx = (it.tipped ? sz.h : sz.w) + 0.08
-                let fz = sz.d + 0.08
-                let center = it.tipped ? SIMD3<Float>(-sz.h / 2, 0, 0) : SIMD3<Float>(0, 0, 0)
-                var sm = Models.translate(it.floorPos.x, 0.003, it.floorPos.y) * Models.rotate(it.yaw, SIMD3(0, 1, 0))
-                sm = sm * Models.translate(center.x, 0, 0)
-                var scale = matrix_identity_float4x4
-                scale.columns.0.x = fx * 1.25
-                scale.columns.2.z = fz * 1.25
-                shadows.add(ContactShadow.mesh, transform: sm * scale)
+                if let b = c.baked[id] { batch.add(b) }
+                if let b = c.bakedShadow[id] { shadows.add(b) }
+            }
+            if let merged = batch.build() {
+                Models.setCategory(merged, Models.categoryNoHit)
+                scene.rootNode.addChildNode(merged)
+                c.visual = merged
             }
             if let sh = shadows.build() {
                 sh.renderingOrder = 5
@@ -292,31 +307,8 @@ final class GameWorld {
                 scene.rootNode.addChildNode(sh)
                 c.shadow = sh
             }
-            let flat: SCNNode
-            if let merged = batch.build() {
-                flat = merged
-            } else {
-                // Fallback: individual models (slower, but always visible).
-                let container = SCNNode()
-                for id in c.items {
-                    guard let it = floorItems[id], let p = Catalog.product(it.product) else { continue }
-                    let holder = SCNNode()
-                    holder.simdPosition = SIMD3(it.floorPos.x, 0, it.floorPos.y)
-                    holder.simdEulerAngles = SIMD3(0, it.yaw, 0)
-                    let m = Models.productNode(p, expired: it.expired)
-                    if it.tipped {
-                        m.eulerAngles.z = Float.pi / 2
-                        m.position.y = p.shape.size.w / 2
-                    }
-                    holder.addChildNode(m)
-                    container.addChildNode(holder)
-                }
-                flat = container
-            }
-            Models.setCategory(flat, Models.categoryNoHit)
-            scene.rootNode.addChildNode(flat)
-            c.visual = flat
         }
+        chunksDirty = false
     }
 
     /// A temporary copy of a floor item flying to a point (pickup / magnet animation).
@@ -559,7 +551,7 @@ final class GameWorld {
         time += dt
         if !completed && !skills.isActive(.freeze, now: time) { elapsed += dt }
         updatePlayer(dt: Float(dt), move: move)
-        rebuildChunks()
+        rebuildChunks(limit: 2)
         if scannerCategory != nil && !skills.isActive(.scanner, now: time) {
             scannerCategory = nil
             refreshSigns()
@@ -582,12 +574,20 @@ final class GameWorld {
         let speed: Float = 3.0 * Float(game.walkSpeed) * (sprinting ? 1.8 : 1)
         let forward = SIMD2<Float>(-sin(yaw), -cos(yaw))
         let right = SIMD2<Float>(cos(yaw), -sin(yaw))
-        playerPos = resolveCollisions(playerPos + (forward * mv.y + right * mv.x) * speed * dt)
+        // Ease in/out of walking like a person would (quick to start, a touch slower to stop).
+        let wanted = (forward * mv.y + right * mv.x) * speed
+        let rate: Float = simd_length(wanted) > simd_length(velocity) ? 14 : 10
+        velocity += (wanted - velocity) * min(1, dt * rate)
+        if simd_length(velocity) < 0.01 && simd_length(wanted) == 0 { velocity = .zero }
+        let resolved = resolveCollisions(playerPos + velocity * dt)
+        if dt > 0 { velocity = (resolved - playerPos) / dt }   // don't keep pushing into walls
+        playerPos = resolved
         playerNode.simdPosition = SIMD3(playerPos.x, 0, playerPos.y)
 
-        let moving = simd_length(mv) > 0.08
-        if moving { bobPhase += dt * speed * 3.4 }
-        let amount = min(1, simd_length(mv))
+        let walkAmount = min(1, simd_length(velocity) / max(0.1, 3.0 * Float(game.walkSpeed)))
+        let moving = walkAmount > 0.08
+        if moving { bobPhase += dt * simd_length(velocity) * 3.4 }
+        let amount = walkAmount
         let bob: Float = (d.headBob && !d.reduceMotion && moving) ? abs(sin(bobPhase)) * 0.045 * amount - 0.02 * amount : 0
         let sideBob: Float = (d.headBob && !d.reduceMotion && moving) ? sin(bobPhase) * 0.018 * amount : 0
         cameraNode.simdPosition = SIMD3(sideBob, eyeHeight + bob, 0)

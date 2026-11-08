@@ -18,30 +18,58 @@ final class MeshBatcher {
 
     var isEmpty: Bool { positions.isEmpty }
 
-    func add(_ mesh: ProductMesh, transform m: simd_float4x4) {
+    /// A mesh already placed in the world, ready to be stitched into a batch quickly.
+    struct Baked {
+        var positions: [SIMD3<Float>] = []
+        var normals: [SIMD3<Float>] = []
+        var uvs: [SIMD2<Float>] = []
+        var groups: [(material: SCNMaterial, indices: [UInt32])] = []
+    }
+
+    static func bake(_ mesh: ProductMesh, transform m: simd_float4x4) -> Baked {
+        var out = Baked()
         let r = simd_float3x3(SIMD3(m.columns.0.x, m.columns.0.y, m.columns.0.z),
                               SIMD3(m.columns.1.x, m.columns.1.y, m.columns.1.z),
                               SIMD3(m.columns.2.x, m.columns.2.y, m.columns.2.z))
         for part in mesh.parts {
             let mat = mesh.materials[min(part.material, mesh.materials.count - 1)]
-            let base = UInt32(positions.count)
+            let base = UInt32(out.positions.count)
             for v in part.positions {
                 let w = m * SIMD4(v, 1)
-                positions.append(SIMD3(w.x, w.y, w.z))
+                out.positions.append(SIMD3(w.x, w.y, w.z))
             }
             for n in part.normals {
                 let t = r * n
                 let len = simd_length(t)
-                normals.append(len > 0 ? t / len : SIMD3(0, 1, 0))
+                out.normals.append(len > 0 ? t / len : SIMD3(0, 1, 0))
             }
-            uvs.append(contentsOf: part.uvs)
-            let key = ObjectIdentifier(mat)
+            out.uvs.append(contentsOf: part.uvs)
+            out.groups.append((mat, part.indices.map { $0 + base }))
+        }
+        return out
+    }
+
+    func add(_ b: Baked) {
+        let base = UInt32(positions.count)
+        positions.append(contentsOf: b.positions)
+        normals.append(contentsOf: b.normals)
+        uvs.append(contentsOf: b.uvs)
+        for g in b.groups {
+            let key = ObjectIdentifier(g.material)
             if buckets[key] == nil {
-                buckets[key] = Bucket(material: mat)
+                buckets[key] = Bucket(material: g.material)
                 order.append(key)
             }
-            buckets[key]!.indices.append(contentsOf: part.indices.map { $0 + base })
+            if base == 0 {
+                buckets[key]!.indices.append(contentsOf: g.indices)
+            } else {
+                buckets[key]!.indices.append(contentsOf: g.indices.map { $0 + base })
+            }
         }
+    }
+
+    func add(_ mesh: ProductMesh, transform m: simd_float4x4) {
+        add(Self.bake(mesh, transform: m))
     }
 
     func buildGeometry() -> SCNGeometry? {

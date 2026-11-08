@@ -359,7 +359,9 @@ extension GameWorld {
         let prev = ProgressStore.shared.complete(level, stars: stars, time: t)
         Feedback.shared.play(.complete)
         Feedback.shared.haptic(.success)
-        for f in fixtures { for s in f.slots where s.isFull { sparkle(at: s.worldCenter, big: true) } }
+        // A celebratory burst on a handful of shelves (not all of them: that would hitch).
+        let full = fixtures.flatMap { $0.slots }.filter { $0.isFull }.shuffled().prefix(16)
+        for s in full { sparkle(at: s.worldCenter, big: true) }
         let result = LevelResult(level: level, time: t, par: par, stars: stars, mistakes: mistakes, items: total,
                                  bestTime: prev, newBest: prev == nil || t < prev!, next: Levels.next(after: level.id))
         onComplete?(result)

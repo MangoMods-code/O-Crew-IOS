@@ -11,6 +11,7 @@ final class FirstPersonRig {
     private let rightArm = SCNNode()
     private let leftArm = SCNNode()
     private var fingers: [SCNNode] = []
+    private var knuckles: [SCNNode] = []
     private var thumb = SCNNode()
     private var reachStart: Double = -10
     private var sway = SIMD2<Float>(0, 0)
@@ -56,6 +57,7 @@ final class FirstPersonRig {
         leftArm.addChildNode(basketHolder)
         root.addChildNode(leftArm)
 
+        knuckles = fingers.compactMap { $0.childNode(withName: "knuckle", recursively: false) }
         Models.setCategory(root, 2)
     }
 
@@ -139,10 +141,8 @@ final class FirstPersonRig {
         if t >= 0 && t < dur { e = sin(t / dur * .pi) }
         rightArm.simdPosition = rightRest + SIMD3(-0.03 * e, 0.06 * e, -0.16 * e)
         rightArm.simdEulerAngles = SIMD3(0.12 * e, 0.1 * e, 0)
-        for f in fingers {
-            f.eulerAngles.x = -0.25 - 0.9 * e
-            f.childNode(withName: "knuckle", recursively: false)?.eulerAngles.x = -0.35 - 0.9 * e
-        }
+        for f in fingers { f.eulerAngles.x = -0.25 - 0.9 * e }
+        for k in knuckles { k.eulerAngles.x = -0.35 - 0.9 * e }
         thumb.eulerAngles.y = 0.6 - 0.5 * e
     }
 }

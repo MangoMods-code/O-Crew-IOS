@@ -103,9 +103,12 @@ final class ProgressStore: ObservableObject {
         persist()
     }
 
+    private let ioQueue = DispatchQueue(label: "ocrew.progress.io", qos: .utility)
+
+    /// Encodes on the main thread (fast) and writes to disk in the background (never hitches).
     private func persist() {
-        if let d = try? JSONEncoder().encode(data) {
-            try? d.write(to: url, options: .atomic)
-        }
+        guard let d = try? JSONEncoder().encode(data) else { return }
+        let target = url
+        ioQueue.async { try? d.write(to: target, options: .atomic) }
     }
 }

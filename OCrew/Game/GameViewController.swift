@@ -26,6 +26,7 @@ final class GameViewController: UIViewController {
     private var overlayOpen = false
     private var cancellables = Set<AnyCancellable>()
     private var hitFrame = 0
+    private var lastPromptFocus: Target?
     private var lastSave: Double = 0
 
     init(level: OrgLevel) {
@@ -39,9 +40,50 @@ final class GameViewController: UIViewController {
     override var prefersHomeIndicatorAutoHidden: Bool { true }
     override var preferredScreenEdgesDeferringSystemGestures: UIRectEdge { .all }
 
+    private let loadingView = UIView()
+
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .black
+        showLoading()
+        // Let the loading screen draw first, then build the store behind it.
+        Task { @MainActor [weak self] in
+            try? await Task.sleep(nanoseconds: 60_000_000)
+            self?.setupWorld()
+        }
+    }
+
+    private func showLoading() {
+        loadingView.frame = view.bounds
+        loadingView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        loadingView.backgroundColor = UIColor(hex: 0x111418)
+        let title = UILabel()
+        title.text = "\(level.title) · \(level.stageName)"
+        title.font = .systemFont(ofSize: 24, weight: .heavy)
+        title.textColor = .white
+        title.textAlignment = .center
+        let sub = UILabel()
+        sub.text = "Knocking everything off the shelves…"
+        sub.font = .systemFont(ofSize: 15, weight: .medium)
+        sub.textColor = UIColor(hex: Theme.dim)
+        sub.textAlignment = .center
+        let spin = UIActivityIndicatorView(style: .large)
+        spin.color = UIColor(hex: Theme.brand)
+        spin.startAnimating()
+        let stack = UIStackView(arrangedSubviews: [spin, title, sub])
+        stack.axis = .vertical
+        stack.spacing = 10
+        stack.alignment = .center
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        loadingView.addSubview(stack)
+        NSLayoutConstraint.activate([
+            stack.centerXAnchor.constraint(equalTo: loadingView.centerXAnchor),
+            stack.centerYAnchor.constraint(equalTo: loadingView.centerYAnchor),
+        ])
+        view.addSubview(loadingView)
+    }
+
+    private func setupWorld() {
         world = GameWorld(level: level, save: ProgressStore.shared.save(for: level.id))
         ProductIcons.warm(level.products)
 
@@ -96,6 +138,11 @@ final class GameViewController: UIViewController {
             .store(in: &cancellables)
 
         refreshBasket()
+        view.bringSubviewToFront(loadingView)
+        UIView.animate(withDuration: 0.35, animations: { self.loadingView.alpha = 0 }, completion: { _ in
+            self.loadingView.removeFromSuperview()
+        })
+        lastTimestamp = 0
         hud.showToast("\(level.title) — \(level.stageName). Put every item back where it belongs!", style: .info)
     }
 
@@ -145,6 +192,7 @@ final class GameViewController: UIViewController {
     // MARK: Loop
 
     @objc private func tick(_ link: CADisplayLink) {
+        guard world != nil else { return }
         let cpuStart = CACurrentMediaTime()
         defer {
             metalView?.render(time: link.timestamp)
@@ -176,7 +224,11 @@ final class GameViewController: UIViewController {
         hud.setStatus(level: "\(level.title) · \(level.stageName)", time: world.timeString(),
                       frozen: world.skills.isActive(.freeze, now: world.time),
                       remaining: rem, progress: world.total > 0 ? 1 - Double(rem) / Double(world.total) : 1)
-        hud.setPrompt(world.prompt(for: focus))
+        hitFrame += 1
+        if hitFrame % 2 == 0 || focus != lastPromptFocus {
+            lastPromptFocus = focus
+            hud.setPrompt(world.prompt(for: focus))
+        }
         hud.setTip(world.tutorialText)
         hud.crosshair.isTargeting = focus != nil
         let mul = world.skillMultiplier

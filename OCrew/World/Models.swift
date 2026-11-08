@@ -209,11 +209,100 @@ enum Models {
         return root
     }
 
-    static func productNode(_ p: Product) -> SCNNode { productTemplate(p).clone() }
+    static func productNode(_ p: Product, expired: Bool = false) -> SCNNode {
+        expired ? expiredTemplate(p).clone() : productTemplate(p).clone()
+    }
+
+    private static var expiredTemplates: [String: SCNNode] = [:]
+
+    /// Same product, but faded/brown with a red "expired" sticker.
+    static func expiredTemplate(_ p: Product) -> SCNNode {
+        if let n = expiredTemplates[p.id] { return n }
+        let root = SCNNode()
+        let tint = UIColor(hex: 0x9C8B6E)
+        for child in productTemplate(p).childNodes {
+            guard let g = child.geometry?.copy() as? SCNGeometry else { continue }
+            g.materials = g.materials.map { m in
+                let c = (m.copy() as? SCNMaterial) ?? SCNMaterial()
+                c.multiply.contents = tint
+                return c
+            }
+            let n = SCNNode(geometry: g)
+            n.transform = child.transform
+            root.addChildNode(n)
+        }
+        let s = p.shape.size
+        let sticker = SCNNode(geometry: SCNBox(width: CGFloat(min(0.07, s.w * 0.6)), height: CGFloat(min(0.05, s.h * 0.4)),
+                                               length: 0.004, chamferRadius: 0))
+        sticker.geometry?.firstMaterial = emissive(0xE02424)
+        sticker.position = SCNVector3(0, s.h * 0.55, s.d / 2 + 0.003)
+        root.addChildNode(sticker)
+        expiredTemplates[p.id] = root
+        return root
+    }
+
+    // MARK: Store signage
+
+    private static var signImages: [String: UIImage] = [:]
+
+    static func signImage(_ text: String, lit: Bool) -> UIImage {
+        let key = text + (lit ? "|1" : "|0")
+        if let i = signImages[key] { return i }
+        let size = CGSize(width: max(360, CGFloat(text.count) * 34), height: 120)
+        let img = UIGraphicsImageRenderer(size: size).image { _ in
+            let rect = CGRect(origin: .zero, size: size)
+            UIColor(hex: lit ? 0xFFD54A : 0x1B2631).setFill()
+            UIBezierPath(roundedRect: rect, cornerRadius: 22).fill()
+            UIColor(hex: lit ? 0xFFFFFF : 0x4A5A6A).setStroke()
+            let border = UIBezierPath(roundedRect: rect.insetBy(dx: 5, dy: 5), cornerRadius: 18)
+            border.lineWidth = 6
+            border.stroke()
+            let para = NSMutableParagraphStyle(); para.alignment = .center
+            let attrs: [NSAttributedString.Key: Any] = [
+                .font: UIFont.systemFont(ofSize: 60, weight: .black),
+                .foregroundColor: lit ? UIColor(hex: 0x1B2631) : UIColor.white, .paragraphStyle: para]
+            (text as NSString).draw(in: CGRect(x: 10, y: 24, width: size.width - 20, height: 80), withAttributes: attrs)
+        }
+        signImages[key] = img
+        return img
+    }
+
+    static func rowLabelImage(_ text: String, lit: Bool) -> UIImage {
+        let key = "row|" + text + (lit ? "|1" : "|0")
+        if let i = signImages[key] { return i }
+        let size = CGSize(width: 768, height: 44)
+        let img = UIGraphicsImageRenderer(size: size).image { _ in
+            UIColor(hex: lit ? 0xFFD54A : 0xF7F7F2).setFill()
+            UIRectFill(CGRect(origin: .zero, size: size))
+            UIColor(hex: 0x1B2631).setFill()
+            UIRectFill(CGRect(x: 0, y: 0, width: 768, height: 4))
+            let para = NSMutableParagraphStyle(); para.alignment = .center
+            (text.uppercased() as NSString).draw(in: CGRect(x: 0, y: 6, width: 768, height: 36), withAttributes: [
+                .font: UIFont.systemFont(ofSize: 28, weight: .heavy), .foregroundColor: UIColor(hex: 0x1B2631),
+                .paragraphStyle: para, .kern: 4])
+        }
+        signImages[key] = img
+        return img
+    }
+
+    static func shelfTagImage(_ name: String) -> UIImage {
+        let key = "tag|" + name
+        if let i = signImages[key] { return i }
+        let size = CGSize(width: 300, height: 70)
+        let img = UIGraphicsImageRenderer(size: size).image { _ in
+            UIColor(hex: 0xFFFFFF).setFill()
+            UIBezierPath(roundedRect: CGRect(origin: .zero, size: size), cornerRadius: 10).fill()
+            let para = NSMutableParagraphStyle(); para.alignment = .center; para.lineBreakMode = .byTruncatingTail
+            (name as NSString).draw(in: CGRect(x: 6, y: 18, width: 288, height: 36), withAttributes: [
+                .font: UIFont.systemFont(ofSize: 26, weight: .bold), .foregroundColor: UIColor(hex: 0x222222), .paragraphStyle: para])
+        }
+        signImages[key] = img
+        return img
+    }
 
     // MARK: Cardboard box
 
-    static var boxSize: SIMD3<Float> { Dimensions.box }
+    static let boxSize = SIMD3<Float>(0.5, 0.32, 0.4)
 
     static func cardboardBox(for p: Product) -> SCNNode {
         let s = boxSize

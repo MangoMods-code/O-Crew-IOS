@@ -1,54 +1,55 @@
 import Foundation
 
 enum SkillID: String, CaseIterable, Identifiable {
-    case sprint, rushRestock, expressScan, crowdCalm, eagleEye
+    case sprint, magnet, scanner, autoSort, freeze
 
     var id: String { rawValue }
 
     var name: String {
         switch self {
         case .sprint: return "Sprint"
-        case .rushRestock: return "Rush Restock"
-        case .expressScan: return "Express Scan"
-        case .crowdCalm: return "Crowd Calm"
-        case .eagleEye: return "Eagle Eye"
+        case .magnet: return "Magnet"
+        case .scanner: return "Scanner"
+        case .autoSort: return "Auto-Sort"
+        case .freeze: return "Time Freeze"
         }
     }
 
     var shortName: String {
         switch self {
         case .sprint: return "Sprint"
-        case .rushRestock: return "Restock"
-        case .expressScan: return "Express"
-        case .crowdCalm: return "Calm"
-        case .eagleEye: return "Eagle"
+        case .magnet: return "Magnet"
+        case .scanner: return "Scan"
+        case .autoSort: return "Sort"
+        case .freeze: return "Freeze"
         }
     }
 
     var symbol: String {
         switch self {
         case .sprint: return "figure.run"
-        case .rushRestock: return "shippingbox.fill"
-        case .expressScan: return "barcode.viewfinder"
-        case .crowdCalm: return "face.smiling"
-        case .eagleEye: return "eye.fill"
+        case .magnet: return "dot.radiowaves.left.and.right"
+        case .scanner: return "viewfinder"
+        case .autoSort: return "wand.and.stars"
+        case .freeze: return "snowflake"
         }
     }
 
     var cooldown: Double {
         switch self {
-        case .sprint: return 18
-        case .rushRestock: return 35
-        case .expressScan: return 45
-        case .crowdCalm: return 90
-        case .eagleEye: return 60
+        case .sprint: return 15
+        case .magnet: return 25
+        case .scanner: return 30
+        case .autoSort: return 60
+        case .freeze: return 75
         }
     }
 
     var duration: Double {
         switch self {
         case .sprint: return 6
-        case .eagleEye: return 12
+        case .scanner: return 8
+        case .freeze: return 10
         default: return 0
         }
     }
@@ -56,10 +57,10 @@ enum SkillID: String, CaseIterable, Identifiable {
     var detail: String {
         switch self {
         case .sprint: return "Move 80% faster for 6 seconds."
-        case .rushRestock: return "Instantly fill the shelf you're looking at from the box you're holding."
-        case .expressScan: return "Scan every item on the counter at once."
-        case .crowdCalm: return "Every customer's patience refills to full."
-        case .eagleEye: return "Shoplifters glow red for 12 seconds."
+        case .magnet: return "Pull nearby items off the floor into your basket."
+        case .scanner: return "Light up the signs where your selected item belongs."
+        case .autoSort: return "Up to 5 items from your basket fly to their correct spots."
+        case .freeze: return "Stop the clock for 10 seconds."
         }
     }
 }
@@ -75,10 +76,9 @@ struct SkillSet {
     func isActive(_ s: SkillID, now: Double) -> Bool { (states[s]?.activeUntil ?? 0) > now }
     func isReady(_ s: SkillID, now: Double) -> Bool { (states[s]?.readyAt ?? 0) <= now }
 
-    /// 0 = ready, 1 = just used.
     func cooldownFraction(_ s: SkillID, now: Double, multiplier: Double) -> Double {
         guard let st = states[s], st.readyAt > now else { return 0 }
-        return min(1, (st.readyAt - now) / (s.cooldown * multiplier))
+        return min(1, (st.readyAt - now) / max(0.1, s.cooldown * multiplier))
     }
 
     func remaining(_ s: SkillID, now: Double) -> Double { max(0, (states[s]?.readyAt ?? 0) - now) }

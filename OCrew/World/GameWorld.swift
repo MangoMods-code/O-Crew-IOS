@@ -2,91 +2,31 @@ import SceneKit
 import simd
 import UIKit
 
-struct CarryBox {
-    var product: String
-    var count: Int
-}
-
-final class FloorBox {
-    let id: Int
-    var product: String
-    var count: Int
-    let node: SCNNode
-    var onPad: Bool
-    init(id: Int, product: String, count: Int, node: SCNNode, onPad: Bool) {
-        self.id = id; self.product = product; self.count = count; self.node = node; self.onPad = onPad
-    }
-}
-
-struct BeltItem {
-    let node: SCNNode
-    let product: String
-    var scanned: Bool
-}
-
-struct DayStats {
-    var revenue = 0.0
-    var expenses = 0.0
-    var stockSpend = 0.0
-    var served = 0
-    var angry = 0
-    var thefts = 0
-    var caught = 0
-    var stolenValue = 0.0
-    var outOfStock = 0
-    var tooExpensive = 0
-    var unitsSold = 0
-    var changeMistakes = 0
-    var missing: [String: Int] = [:]
-}
-
-struct DaySummary {
-    let levelName: String
-    let day: Int
-    let totalDays: Int
-    let stats: DayStats
-    let rent: Double
-    let dayProfit: Double
-    let levelProfit: Double
-    let profitGoal: Double
-    let rating: Double
-    let ratingGoal: Double
-    let cash: Double
-    let isLastDay: Bool
-    let passed: Bool
-    let stars: Int
-    let nextLevelName: String?
-}
-
-enum Phase { case prep, open, closing, ended }
-
 enum Target: Equatable {
+    case item(Int)
     case slot(Int, Int)
-    case floorBox(Int)
-    case beltItem(Int)
-    case terminal, register, computer, sign, bin
-    case customer(Int)
+    case bin
 }
 
 enum ToastStyle { case info, good, warn, bad }
 
-struct ChangeRequest {
-    let total: Double
-    let tendered: Double
+struct BasketGroup: Equatable {
+    let key: String
+    let product: String
+    let expired: Bool
+    let count: Int
 }
 
 @MainActor
 final class GameWorld {
-    // MARK: Static setup
-    let level: StoreLevel
+    // MARK: Setup
+    let level: OrgLevel
     let layout: StoreLayout
-    let nav: NavGrid
     let scene = SCNScene()
     let playerNode = SCNNode()
     let cameraNode = SCNNode()
-    let carryNode = SCNNode()
+    let basketNode = SCNNode()
     let highlightNode: SCNNode
-    var signNode = SCNNode()
     var fixtures: [Fixture] = []
     var playerRects: [Rect] = []
     let eyeHeight: Float = 1.62
@@ -94,67 +34,73 @@ final class GameWorld {
     // MARK: Player
     var playerPos: SIMD2<Float>
     var yaw: Float = 0
-    var pitch: Float = -0.08
+    var pitch: Float = -0.25
     var targetYaw: Float = 0
-    var targetPitch: Float = -0.08
+    var targetPitch: Float = -0.25
     var bobPhase: Float = 0
-    var carried: CarryBox?
 
-    // MARK: Store state
-    var cash: Double = 0
-    var rating: Double = 3.0
-    var levelProfit: Double = 0
-    var day: Int = 1
-    var phase: Phase = .prep
-    var clock: Double = 0              // 0..1 through opening hours
-    var prices: [String: Double] = [:]
-    var stats = DayStats()
-    var floorBoxes: [FloorBox] = []
-    var nextBoxID = 1
-    var pending: [(at: Double, product: String)] = []
-    var customers: [Customer] = []
-    var nextCustomerID = 1
-    var queue: [Customer] = []
-    var belt: [BeltItem] = []
-    var beltTotal: Double = 0
-    var checkoutCustomer: Customer?
-    var skills = SkillSet()
+    // MARK: Items
+    var items: [Int: Item] = [:]
+    var floorItems: [Int: Item] = [:]
+    var basket: [Item] = []
+    var selectedKey: String?
+    var binned = 0
+    var total = 0
+    var nextItemID = 1
+
+    // MARK: Progress
+    var elapsed: Double = 0
+    var mistakes = 0
     var time: Double = 0
     var paused = false
-    var rushAnnounced: Set<Int> = []
-    var lastSummary: DaySummary?
-    var deliveryToastPending = false
-
-    // MARK: Tutorial
+    var completed = false
+    var skills = SkillSet()
+    var scannerCategory: String?
+    var lastWrongToast: Double = -10
+    var placedCount = 0
+    var pickedCount = 0
     var tutorialActive = false
     var tutorialStep = 0
-    var stockedUnits = 0
-    var ordersPlaced = 0
 
-    // MARK: Callbacks to the view controller
+    // MARK: Callbacks
     var onToast: ((String, ToastStyle) -> Void)?
-    var onDayEnded: ((DaySummary) -> Void)?
-    var onRequestChange: ((ChangeRequest) -> Void)?
-    var onOpenPrice: ((String) -> Void)?
-    var onOpenComputer: (() -> Void)?
-    var onMoneyPopup: ((Double) -> Void)?
+    var onComplete: ((LevelResult) -> Void)?
+    var onBasketChanged: (() -> Void)?
 
     var display: DisplaySettings { SettingsStore.shared.display }
     var game: GameSettings { SettingsStore.shared.game }
-    var symbol: String { display.currencySymbol }
+    var capacity: Int { max(3, Int(game.basketCapacity.rounded())) }
+    var par: Double { (30 + Double(total) * 4.0) * game.parTimeScale }
 
     // MARK: Init
 
-    init(level: StoreLevel, save: LevelSave?) {
+    init(level: OrgLevel, save: LevelSave?) {
         self.level = level
-        layout = StoreLayout(level: level)
-        nav = NavGrid(layout: layout)
+
+        // Plan shelf rows: each category gets enough rows for its products.
+        var groups: [(kind: FixtureKind, cat: String, count: Int)] = []
+        for id in level.products {
+            guard let p = Catalog.product(id) else { continue }
+            if let i = groups.firstIndex(where: { $0.kind == p.fixture && $0.cat == p.category }) {
+                groups[i].count += 1
+            } else {
+                groups.append((p.fixture, p.category, 1))
+            }
+        }
+        var rowQueues: [FixtureKind: [String]] = [:]
+        for g in groups {
+            let rows = Int(ceil(Double(g.count * level.slotsPerProduct) / 2))
+            rowQueues[g.kind, default: []] += Array(repeating: g.cat, count: rows)
+        }
+        func units(_ k: FixtureKind) -> Int { Int(ceil(Double(rowQueues[k]?.count ?? 0) / 3)) }
+        let cold = Array(repeating: FixtureKind.fridge, count: units(.fridge)) + Array(repeating: FixtureKind.freezer, count: units(.freezer))
+        let extra = Float(level.products.count / 6) + (level.stage == 3 ? 1 : 0)
+        layout = StoreLayout.fit(cold: cold, shelves: max(1, units(.shelf)), minWidth: 9 + extra, minDepth: 11 + extra)
         playerPos = layout.playerStart
 
         let hl = SCNNode(geometry: SCNBox(width: 1, height: 1, length: 1, chamferRadius: 0))
         let hm = SCNMaterial()
         hm.diffuse.contents = UIColor(white: 1, alpha: 0.16)
-        hm.emission.contents = UIColor(white: 1, alpha: 0.16)
         hm.lightingModel = .constant
         hm.writesToDepthBuffer = false
         hm.transparencyMode = .dualLayer
@@ -165,32 +111,174 @@ final class GameWorld {
         highlightNode = hl
 
         buildScene()
-        playerRects = layout.solidRects + layout.playerOnlyRects
+        playerRects = layout.solidRects
 
-        if let s = save, s.slots.count == fixtures.count {
-            day = s.day
-            cash = s.cash
-            rating = s.rating
-            levelProfit = s.levelProfit
-            prices = s.prices
-            for (fi, fx) in fixtures.enumerated() {
-                for (si, slot) in fx.slots.enumerated() where si < s.slots[fi].count {
-                    slot.product = s.slots[fi][si].product
-                    slot.count = s.slots[fi][si].count
-                    slot.rebuild()
+        // Label the rows
+        var queues = rowQueues
+        for f in fixtures {
+            var cats: [String?] = []
+            for _ in 0..<3 {
+                if var q = queues[f.kind], !q.isEmpty {
+                    cats.append(q.removeFirst())
+                    queues[f.kind] = q
+                } else {
+                    cats.append(nil)
                 }
             }
-            for b in s.boxes { spawnPadBox(product: b.product, count: b.count) }
+            f.setRows(cats, showLabels: display.showRowLabels, signScale: Float(display.signScale))
+        }
+
+        if let s = save, s.fixtureCount == fixtures.count, restore(s) {
+            // restored
         } else {
-            cash = (level.startingCash * game.startingCash).rounded()
-            rating = 3.0
+            generateMess()
         }
-        for id in level.products where prices[id] == nil {
-            prices[id] = Catalog.product(id)?.market ?? 1
+        tutorialActive = level.index == 0 && game.showTutorial && !ProgressStore.shared.data.seenTutorial && save == nil
+        updateBasketVisual()
+    }
+
+    // MARK: Mess generation
+
+    private func generateMess() {
+        var list: [Item] = []
+        for id in level.products {
+            guard let p = Catalog.product(id) else { continue }
+            let cap = Slot.capacity(for: p) * level.slotsPerProduct
+            let n = max(2, min(cap, Int((Double(cap) * level.fill * game.messSize).rounded())))
+            for _ in 0..<n { list.append(makeItem(id, expired: false)) }
         }
-        tutorialActive = level.number == 1 && day == 1 && game.showTutorial && !ProgressStore.shared.data.seenTutorial
-        refreshAllTags()
-        beginDay()
+        if game.expiredItems && level.expired > 0 {
+            for _ in 0..<level.expired {
+                if let id = level.products.randomElement() { list.append(makeItem(id, expired: true)) }
+            }
+        }
+        total = list.count
+        list.shuffle()
+
+        // Some products start on the wrong shelves.
+        if game.misplacedItems && level.misplaced > 0 {
+            let k = Int((Double(level.products.count) * level.misplaced).rounded())
+            for id in level.products.shuffled().prefix(k) {
+                guard let p = Catalog.product(id) else { continue }
+                let candidates = fixtures.filter { $0.kind == p.fixture }.flatMap { $0.slots }
+                    .filter { $0.items.isEmpty && $0.category != p.category }
+                guard let slot = candidates.randomElement() else { continue }
+                let mine = list.filter { $0.product == id && !$0.expired }
+                let take = Array(mine.prefix(min(3, max(1, mine.count / 2))))
+                for it in take {
+                    slot.items.append(it)
+                    list.removeAll { $0 === it }
+                }
+                slot.rebuild()
+                slot.refreshTag(visible: display.showShelfTags)
+            }
+        }
+
+        // Scatter the rest in messy piles.
+        var piles: [SIMD2<Float>] = []
+        let pileCount = max(3, list.count / 9)
+        var guardCount = 0
+        while piles.count < pileCount && guardCount < 2000 {
+            guardCount += 1
+            let p = SIMD2<Float>(Float.random(in: 0.6...(layout.width - 0.6)), Float.random(in: 0.6...(layout.depth - 0.6)))
+            if layout.isOpen(p, clearance: 0.4) && simd_distance(p, layout.playerStart) > 1.0 { piles.append(p) }
+        }
+        if piles.isEmpty { piles = [layout.playerStart + SIMD2(0, -1)] }
+        for it in list {
+            let c = piles.randomElement()!
+            var spot = c
+            for _ in 0..<14 {
+                let a = Float.random(in: 0...(2 * .pi)), r = Float.random(in: 0...1.1)
+                let q = c + SIMD2(cos(a), sin(a)) * r
+                if layout.isOpen(q, clearance: 0.25) { spot = q; break }
+            }
+            let tipped = game.tippedItems && Float.random(in: 0...1) < 0.35
+            placeOnFloor(it, at: spot, yaw: Float.random(in: 0...(2 * .pi)), tipped: tipped)
+        }
+    }
+
+    private func makeItem(_ product: String, expired: Bool) -> Item {
+        let it = Item(id: nextItemID, product: product, expired: expired)
+        nextItemID += 1
+        items[it.id] = it
+        return it
+    }
+
+    func placeOnFloor(_ it: Item, at p: SIMD2<Float>, yaw: Float, tipped: Bool) {
+        guard let prod = Catalog.product(it.product) else { return }
+        let s = prod.shape.size
+        let root = SCNNode()
+        root.name = "item:\(it.id)"
+        let model = Models.productNode(prod, expired: it.expired)
+        if tipped {
+            model.eulerAngles.z = Float.pi / 2
+            model.position.y = s.w / 2
+        }
+        root.addChildNode(model)
+        let bw = max(0.2, tipped ? s.h : s.w), bh = max(0.18, tipped ? s.w : s.h), bd = max(0.2, s.d)
+        let hit = SCNNode(geometry: SCNBox(width: CGFloat(bw), height: CGFloat(bh), length: CGFloat(bd), chamferRadius: 0))
+        hit.geometry?.firstMaterial = Models.invisible()
+        hit.position = SCNVector3(tipped ? -s.h / 2 : 0, bh / 2, 0)
+        root.addChildNode(hit)
+        root.simdPosition = SIMD3(p.x, 0, p.y)
+        root.simdEulerAngles = SIMD3(0, yaw, 0)
+        scene.rootNode.addChildNode(root)
+        it.node = root
+        it.floorPos = p
+        it.yaw = yaw
+        it.tipped = tipped
+        floorItems[it.id] = it
+    }
+
+    // MARK: Save / restore
+
+    func snapshot() {
+        guard !completed else { return }
+        var saves: [ItemSave] = []
+        for it in floorItems.values {
+            saves.append(ItemSave(product: it.product, expired: it.expired, loc: 0, x: it.floorPos.x, z: it.floorPos.y, yaw: it.yaw, tipped: it.tipped))
+        }
+        for it in basket { saves.append(ItemSave(product: it.product, expired: it.expired, loc: 1)) }
+        for f in fixtures {
+            for s in f.slots {
+                for it in s.items { saves.append(ItemSave(product: it.product, expired: it.expired, loc: 2, f: f.index, s: s.index)) }
+            }
+        }
+        ProgressStore.shared.store(LevelSave(levelID: level.id, elapsed: elapsed, mistakes: mistakes, binned: binned,
+                                             total: total, fixtureCount: fixtures.count, items: saves))
+    }
+
+    private func restore(_ s: LevelSave) -> Bool {
+        for sv in s.items where Catalog.product(sv.product) == nil { return false }
+        elapsed = s.elapsed
+        mistakes = s.mistakes
+        binned = s.binned
+        total = s.total
+        var touched: Set<ObjectIdentifier> = []
+        for sv in s.items {
+            let it = makeItem(sv.product, expired: sv.expired)
+            switch sv.loc {
+            case 1:
+                basket.append(it)
+            case 2:
+                if let slot = fixtures[safe: sv.f]?.slots[safe: sv.s] {
+                    slot.items.append(it)
+                    touched.insert(ObjectIdentifier(slot))
+                } else {
+                    placeOnFloor(it, at: layout.playerStart, yaw: 0, tipped: false)
+                }
+            default:
+                placeOnFloor(it, at: SIMD2(sv.x, sv.z), yaw: sv.yaw, tipped: sv.tipped)
+            }
+        }
+        for f in fixtures {
+            for slot in f.slots where touched.contains(ObjectIdentifier(slot)) {
+                slot.rebuild()
+                slot.refreshTag(visible: display.showShelfTags)
+            }
+        }
+        selectedKey = basket.first?.key
+        return true
     }
 
     // MARK: Scene
@@ -198,41 +286,23 @@ final class GameWorld {
     private func buildScene() {
         let W = layout.width, D = layout.depth
         let root = scene.rootNode
+        let theme = level.theme
 
-        // Floor
         let floor = SCNPlane(width: CGFloat(W), height: CGFloat(D))
-        let fm = Models.imageMat(Models.checkerImage(level.floor, level.floorAlt, grout: level.floorAlt &- 0x101010))
+        let fm = Models.imageMat(Models.checkerImage(theme.floor, theme.floorAlt, grout: theme.floorAlt &- 0x101010))
         fm.diffuse.wrapS = .repeat
         fm.diffuse.wrapT = .repeat
         fm.diffuse.contentsTransform = SCNMatrix4MakeScale(W / 1.2, D / 1.2, 1)
         floor.firstMaterial = fm
         let floorNode = SCNNode(geometry: floor)
-        floorNode.eulerAngles.x = -.pi / 2
+        floorNode.eulerAngles.x = -Float.pi / 2
         floorNode.position = SCNVector3(W / 2, 0, D / 2)
+        floorNode.categoryBitMask = Models.categoryNoHit
         root.addChildNode(floorNode)
 
-        // Outside: sidewalk + street
-        let walk = SCNNode(geometry: SCNPlane(width: CGFloat(W + 30), height: 4))
-        walk.geometry?.firstMaterial = Models.mat(0xB8B8B0)
-        walk.eulerAngles.x = -.pi / 2
-        walk.position = SCNVector3(W / 2, -0.005, D + 2)
-        root.addChildNode(walk)
-        let street = SCNNode(geometry: SCNPlane(width: CGFloat(W + 60), height: 30))
-        street.geometry?.firstMaterial = Models.mat(0x3D3F42)
-        street.eulerAngles.x = -.pi / 2
-        street.position = SCNVector3(W / 2, -0.02, D + 19)
-        root.addChildNode(street)
-        for i in 0..<12 {
-            let line = Models.box(1.6, 0.01, 0.15, 0xF4D03F)
-            line.position = SCNVector3(-6 + Float(i) * 4, -0.01, D + 10)
-            root.addChildNode(line)
-        }
-
-        // Walls
         let H: Float = 3.2, t = layout.wallThickness
         func wall(_ x0: Float, _ z0: Float, _ x1: Float, _ z1: Float, _ h: Float, _ y: Float) {
-            let w = max(0.01, x1 - x0), d = max(0.01, z1 - z0)
-            let n = Models.box(w, h, d, level.wall)
+            let n = Models.box(max(0.01, x1 - x0), h, max(0.01, z1 - z0), theme.wall)
             n.position = SCNVector3((x0 + x1) / 2, y + h / 2, (z0 + z1) / 2)
             root.addChildNode(n)
         }
@@ -241,15 +311,26 @@ final class GameWorld {
         wall(W, 0, W + t, D + t, H, 0)
         wall(-t, D, layout.doorMinX, D + t, H, 0)
         wall(layout.doorMaxX, D, W + t, D + t, H, 0)
-        wall(layout.doorMinX, D, layout.doorMaxX, D + t, H - 2.5, 2.5)
-        // Trim stripes
+        wall(layout.doorMinX, D, layout.doorMaxX, D + t, H - 2.4, 2.4)
+        // Closed glass doors
+        let glass = SCNNode(geometry: SCNBox(width: CGFloat(layout.doorMaxX - layout.doorMinX), height: 2.4, length: 0.05, chamferRadius: 0))
+        glass.geometry?.firstMaterial = Models.freshMat(0xBFE0F5, alpha: 0.35)
+        glass.position = SCNVector3((layout.doorMinX + layout.doorMaxX) / 2, 1.2, D + t / 2)
+        glass.categoryBitMask = Models.categoryNoHit
+        root.addChildNode(glass)
+        let closed = Models.billboardText("SORRY, WE'RE CLOSED", color: .white, bg: UIColor(hex: 0xB03A2E), width: 1.4, height: 0.24, fontSize: 52)
+        closed.constraints = nil
+        closed.eulerAngles.y = Float.pi
+        closed.position = SCNVector3((layout.doorMinX + layout.doorMaxX) / 2, 1.5, D - 0.02)
+        root.addChildNode(closed)
+
         func trim(_ x0: Float, _ z0: Float, _ x1: Float, _ z1: Float, y: Float, h: Float) {
-            let n = Models.box(max(0.01, x1 - x0), h, max(0.01, z1 - z0), level.trim)
+            let n = Models.box(max(0.01, x1 - x0), h, max(0.01, z1 - z0), theme.trim)
             n.position = SCNVector3((x0 + x1) / 2, y, (z0 + z1) / 2)
             n.categoryBitMask = Models.categoryNoHit
             root.addChildNode(n)
         }
-        for y in [Float(0.08), Float(2.45)] {
+        for y in [Float(0.08), Float(2.6)] {
             let h: Float = y < 1 ? 0.16 : 0.22
             trim(0, 0, W, 0.02, y: y, h: h)
             trim(0, 0, 0.02, D, y: y, h: h)
@@ -257,38 +338,25 @@ final class GameWorld {
             trim(0, D - 0.02, layout.doorMinX, D, y: y, h: h)
             trim(layout.doorMaxX, D - 0.02, W, D, y: y, h: h)
         }
-        // Front windows
-        let winW = layout.doorMinX - 1.5
-        if winW > 1 {
-            for z in [D - 0.03, D + t + 0.03] {
-                let win = SCNNode(geometry: SCNPlane(width: CGFloat(winW), height: 1.3))
-                win.geometry?.firstMaterial = Models.emissive(0x9FC9E8)
-                win.position = SCNVector3(0.75 + winW / 2, 1.55, z)
-                win.categoryBitMask = Models.categoryNoHit
-                if z > D { win.eulerAngles.y = 0 } else { win.eulerAngles.y = .pi }
-                root.addChildNode(win)
-            }
-        }
-        // Exterior store sign
-        let storeSign = Models.billboardText(level.name.uppercased(), color: .white, bg: UIColor(hex: level.trim), width: 5, height: 0.7, fontSize: 120)
-        storeSign.constraints = nil
-        storeSign.position = SCNVector3(W / 2, 2.85, D + t + 0.05)
-        root.addChildNode(storeSign)
+        // Store name over the back wall
+        let name = Models.billboardText(theme.name.uppercased(), color: .white, bg: UIColor(hex: theme.trim), width: 3.6, height: 0.5, fontSize: 110)
+        name.constraints = nil
+        name.position = SCNVector3(W / 2, 2.95, 0.03)
+        root.addChildNode(name)
 
-        // Ceiling + light panels
         let ceil = SCNNode(geometry: SCNPlane(width: CGFloat(W), height: CGFloat(D)))
         ceil.geometry?.firstMaterial = Models.mat(0xF2F2EE)
-        ceil.eulerAngles.x = .pi / 2
+        ceil.eulerAngles.x = Float.pi / 2
         ceil.position = SCNVector3(W / 2, H, D / 2)
         ceil.categoryBitMask = Models.categoryNoHit
         root.addChildNode(ceil)
-        var lx: Float = 2
+        var lx: Float = 1.5
         while lx < W - 1 {
-            var lz: Float = 2
+            var lz: Float = 1.5
             while lz < D - 1 {
                 let panel = SCNNode(geometry: SCNPlane(width: 1.2, height: 0.5))
                 panel.geometry?.firstMaterial = Models.emissive(0xFFFDF2)
-                panel.eulerAngles.x = .pi / 2
+                panel.eulerAngles.x = Float.pi / 2
                 panel.position = SCNVector3(lx, H - 0.01, lz)
                 panel.categoryBitMask = Models.categoryNoHit
                 root.addChildNode(panel)
@@ -297,50 +365,29 @@ final class GameWorld {
             lx += 3
         }
 
-        // Lights
         let ambient = SCNNode(); ambient.light = SCNLight()
         ambient.light!.type = .ambient
-        ambient.light!.intensity = 520
+        ambient.light!.intensity = 540
         ambient.light!.color = UIColor(hex: 0xFFF8EE)
         root.addChildNode(ambient)
         let sun = SCNNode(); sun.light = SCNLight()
         sun.light!.type = .directional
-        sun.light!.intensity = 620
-        sun.light!.color = UIColor(hex: 0xFFFFFF)
-        sun.eulerAngles = SCNVector3(-1.05, 0.55, 0)
+        sun.light!.intensity = 600
+        sun.eulerAngles = SCNVector3(Float(-1.05), Float(0.55), Float(0))
         root.addChildNode(sun)
         let fill = SCNNode(); fill.light = SCNLight()
         fill.light!.type = .directional
         fill.light!.intensity = 220
-        fill.eulerAngles = SCNVector3(-0.6, .pi + 0.4, 0)
+        fill.eulerAngles = SCNVector3(Float(-0.6), Float.pi + 0.4, Float(0))
         root.addChildNode(fill)
 
-        // Fixtures
         for (i, spec) in layout.fixtures.enumerated() {
-            let f = Fixture(index: i, spec: spec, shelfColor: level.shelfColor)
+            let f = Fixture(index: i, spec: spec, shelfColor: theme.shelfColor)
             fixtures.append(f)
             root.addChildNode(f.node)
         }
 
-        buildCounter(root)
-        buildDesk(root)
-
-        // Delivery pad
-        let padImg = Models.stripesImage(0xF4D03F, 0x2C2C2C)
-        let pad = SCNNode(geometry: SCNPlane(width: CGFloat(layout.pad.size.x), height: CGFloat(layout.pad.size.y)))
-        let pm = Models.imageMat(padImg)
-        pm.diffuse.wrapS = .repeat; pm.diffuse.wrapT = .repeat
-        pm.diffuse.contentsTransform = SCNMatrix4MakeScale(layout.pad.size.x * 1.5, layout.pad.size.y * 1.5, 1)
-        pad.geometry?.firstMaterial = pm
-        pad.eulerAngles.x = -.pi / 2
-        pad.position = SCNVector3(layout.pad.center.x, 0.004, layout.pad.center.y)
-        pad.categoryBitMask = Models.categoryNoHit
-        root.addChildNode(pad)
-        let padLabel = Models.billboardText("DELIVERIES", color: .black, bg: UIColor(hex: 0xF4D03F), width: 1.2, height: 0.25, fontSize: 60)
-        padLabel.position = SCNVector3(layout.pad.center.x, 2.2, layout.pad.minZ)
-        root.addChildNode(padLabel)
-
-        // Bin
+        // Trash bin for expired stock
         let bin = SCNNode()
         bin.name = "bin"
         let can = SCNNode(geometry: SCNCylinder(radius: 0.3, height: 0.85))
@@ -348,124 +395,30 @@ final class GameWorld {
         can.position.y = 0.425
         bin.addChildNode(can)
         let lid = SCNNode(geometry: SCNCylinder(radius: 0.32, height: 0.05))
-        lid.geometry?.firstMaterial = Models.mat(0x2E4053)
+        lid.geometry?.firstMaterial = Models.mat(0xC0392B)
         lid.position.y = 0.87
         bin.addChildNode(lid)
+        let binSign = Models.billboardText("EXPIRED", color: .white, bg: UIColor(hex: 0xC0392B), width: 0.7, height: 0.18, fontSize: 60)
+        binSign.position.y = 1.25
+        bin.addChildNode(binSign)
         bin.position = SCNVector3(layout.bin.center.x, 0, layout.bin.center.y)
         root.addChildNode(bin)
 
-        // Open/closed sign over the door (faces into the store)
-        let sign = SCNNode()
-        sign.name = "sign"
-        let board = SCNNode(geometry: SCNBox(width: 1.0, height: 0.4, length: 0.05, chamferRadius: 0.02))
-        board.geometry?.firstMaterial = Models.mat(0x1B1F24)
-        sign.addChildNode(board)
-        let face = SCNNode(geometry: SCNPlane(width: 0.92, height: 0.32))
-        face.name = "signFace"
-        face.geometry?.firstMaterial = SCNMaterial()
-        face.geometry?.firstMaterial?.lightingModel = .constant
-        face.position.z = 0.03
-        sign.addChildNode(face)
-        sign.position = SCNVector3(layout.doorCenterX, 2.25, D - 0.12)
-        sign.eulerAngles.y = .pi
-        root.addChildNode(sign)
-        signNode = sign
-        updateSign()
-
-        // Player
+        // Player + held basket
         playerNode.simdPosition = SIMD3(playerPos.x, 0, playerPos.y)
         let cam = SCNCamera()
         cam.projectionDirection = .horizontal
         cam.fieldOfView = CGFloat(display.fieldOfView)
         cam.zNear = 0.05
-        cam.zFar = 120
+        cam.zFar = 80
         cameraNode.camera = cam
         cameraNode.position = SCNVector3(0, eyeHeight, 0)
         playerNode.addChildNode(cameraNode)
-        carryNode.position = SCNVector3(0.3, -0.48, -0.78)
-        carryNode.eulerAngles = SCNVector3(0.12, -0.18, 0)
-        cameraNode.addChildNode(carryNode)
+        basketNode.position = SCNVector3(0.36, -0.52, -0.8)
+        basketNode.eulerAngles = SCNVector3(Float(0.25), Float(-0.25), Float(0))
+        cameraNode.addChildNode(basketNode)
         root.addChildNode(playerNode)
         root.addChildNode(highlightNode)
-    }
-
-    private func buildCounter(_ root: SCNNode) {
-        let c = layout.counter
-        let base = Models.box(c.size.x, 0.92, c.size.y, 0x5D4037, chamfer: 0.02)
-        base.position = SCNVector3(c.center.x, 0.46, c.center.y)
-        root.addChildNode(base)
-        let top = Models.box(c.size.x + 0.06, 0.04, c.size.y + 0.06, 0xD7CCC8)
-        top.position = SCNVector3(c.center.x, 0.94, c.center.y)
-        root.addChildNode(top)
-        let beltNode = Models.box(0.6, 0.012, 1.3, 0x1C1C1C)
-        beltNode.position = SCNVector3(c.center.x + 0.05, 0.966, c.minZ + 0.85)
-        beltNode.categoryBitMask = Models.categoryNoHit
-        root.addChildNode(beltNode)
-        let scanner = Models.box(0.3, 0.01, 0.2, 0x7FB3D5)
-        scanner.geometry?.firstMaterial = Models.emissive(0x5DADE2)
-        scanner.position = SCNVector3(c.center.x, 0.966, c.maxZ - 0.75)
-        scanner.categoryBitMask = Models.categoryNoHit
-        root.addChildNode(scanner)
-
-        // Register (cash drawer + screen)
-        let reg = SCNNode()
-        reg.name = "register"
-        let drawer = Models.box(0.45, 0.14, 0.4, 0x2C3E50, chamfer: 0.01)
-        drawer.position.y = 0.07
-        reg.addChildNode(drawer)
-        let screen = SCNNode(geometry: SCNBox(width: 0.3, height: 0.2, length: 0.03, chamferRadius: 0.01))
-        screen.geometry?.materials = [Models.emissive(0x48C9B0), Models.mat(0x1C2833), Models.mat(0x1C2833),
-                                      Models.mat(0x1C2833), Models.mat(0x1C2833), Models.mat(0x1C2833)]
-        screen.position = SCNVector3(0, 0.3, 0)
-        screen.eulerAngles.y = -.pi / 2
-        reg.addChildNode(screen)
-        reg.position = SCNVector3(c.minX + 0.22, 0.96, c.maxZ - 0.3)
-        root.addChildNode(reg)
-
-        // Card terminal
-        let term = SCNNode()
-        term.name = "terminal"
-        let body = Models.box(0.12, 0.2, 0.08, 0x17202A, chamfer: 0.01)
-        body.position.y = 0.1
-        term.addChildNode(body)
-        let tScreen = SCNNode(geometry: SCNPlane(width: 0.08, height: 0.07))
-        tScreen.geometry?.firstMaterial = Models.emissive(0x58D68D)
-        tScreen.position = SCNVector3(0.061, 0.15, 0)
-        tScreen.eulerAngles.y = .pi / 2
-        term.addChildNode(tScreen)
-        term.position = SCNVector3(c.maxX - 0.15, 0.96, c.minZ + 0.25)
-        root.addChildNode(term)
-    }
-
-    private func buildDesk(_ root: SCNNode) {
-        let d = layout.desk
-        let comp = SCNNode()
-        comp.name = "computer"
-        let desk = Models.box(d.size.x, 0.75, d.size.y, 0x8D6E63)
-        desk.position = SCNVector3(0, 0.375, 0)
-        comp.addChildNode(desk)
-        let monitor = SCNNode(geometry: SCNBox(width: 0.05, height: 0.38, length: 0.62, chamferRadius: 0.01))
-        monitor.geometry?.materials = [Models.mat(0x111111), Models.emissive(0x3498DB), Models.mat(0x111111),
-                                       Models.mat(0x111111), Models.mat(0x111111), Models.mat(0x111111)]
-        monitor.position = SCNVector3(0.0, 1.0, 0)
-        comp.addChildNode(monitor)
-        let stand = Models.box(0.05, 0.22, 0.05, 0x222222)
-        stand.position = SCNVector3(0, 0.82, 0)
-        comp.addChildNode(stand)
-        let kb = Models.box(0.18, 0.02, 0.45, 0x2C2C2C)
-        kb.position = SCNVector3(0.18, 0.76, 0)
-        comp.addChildNode(kb)
-        comp.position = SCNVector3(d.center.x, 0, d.center.y)
-        root.addChildNode(comp)
-    }
-
-    func updateSign() {
-        guard let face = signNode.childNode(withName: "signFace", recursively: false) else { return }
-        let open = phase == .open
-        face.geometry?.firstMaterial?.diffuse.contents = Models.textImage(
-            open ? "OPEN" : "CLOSED", size: CGSize(width: 368, height: 128),
-            font: .systemFont(ofSize: 84, weight: .black),
-            color: .white, bg: UIColor(hex: open ? 0x1E8449 : 0xB03A2E), corner: 16)
     }
 
     // MARK: Per-frame
@@ -481,12 +434,13 @@ final class GameWorld {
         guard !paused else { return }
         let dt = min(rawDt, 0.05)
         time += dt
+        if !completed && !skills.isActive(.freeze, now: time) { elapsed += dt }
         updatePlayer(dt: Float(dt), move: move)
-        updateDeliveries()
-        updateClock(dt: dt)
-        updateCustomers(dt: Float(dt))
+        if scannerCategory != nil && !skills.isActive(.scanner, now: time) {
+            scannerCategory = nil
+            refreshSigns()
+        }
         updateTutorial()
-        if phase == .closing && customers.isEmpty { endDay() }
     }
 
     private func updatePlayer(dt: Float, move: SIMD2<Float>) {
@@ -504,8 +458,7 @@ final class GameWorld {
         let speed: Float = 3.0 * Float(game.walkSpeed) * (sprinting ? 1.8 : 1)
         let forward = SIMD2<Float>(-sin(yaw), -cos(yaw))
         let right = SIMD2<Float>(cos(yaw), -sin(yaw))
-        let p = playerPos + (forward * mv.y + right * mv.x) * speed * dt
-        playerPos = resolveCollisions(p)
+        playerPos = resolveCollisions(playerPos + (forward * mv.y + right * mv.x) * speed * dt)
         playerNode.simdPosition = SIMD3(playerPos.x, 0, playerPos.y)
 
         let moving = simd_length(mv) > 0.08
@@ -529,36 +482,17 @@ final class GameWorld {
                 if dist > 1e-4 {
                     q = SIMD2(cx, cz) + d / dist * r
                 } else {
-                    let l = q.x - rect.minX, rr = rect.maxX - q.x, t = q.y - rect.minZ, b = rect.maxZ - q.y
-                    let m = min(l, rr, t, b)
+                    let l = q.x - rect.minX, rr = rect.maxX - q.x, tt = q.y - rect.minZ, b = rect.maxZ - q.y
+                    let m = min(l, rr, tt, b)
                     if m == l { q.x = rect.minX - r } else if m == rr { q.x = rect.maxX + r }
-                    else if m == t { q.y = rect.minZ - r } else { q.y = rect.maxZ + r }
+                    else if m == tt { q.y = rect.minZ - r } else { q.y = rect.maxZ + r }
                 }
             }
         }
         return q
     }
 
-    private func updateClock(dt: Double) {
-        guard phase == .open else { return }
-        clock += dt / max(60, game.dayLengthMinutes * 60)
-        let minutes = 8 * 60 + clock * 720
-        for (start, label) in [(720.0, "Lunch rush!"), (1020.0, "After-work rush!")] {
-            let key = Int(start)
-            if minutes >= start && minutes < start + 60 && !rushAnnounced.contains(key) {
-                rushAnnounced.insert(key)
-                toast(label, .warn)
-            }
-        }
-        if clock >= 1 {
-            clock = 1
-            beginClosing(early: false)
-            return
-        }
-        trySpawn(dt: dt, minutes: minutes)
-    }
-
-    // MARK: Focus helpers
+    // MARK: Focus
 
     var cameraWorldPosition: SIMD3<Float> { cameraNode.simdWorldPosition }
 
@@ -567,8 +501,10 @@ final class GameWorld {
         while let cur = n {
             if let name = cur.name, let t = parseTarget(name) {
                 let dist = simd_distance(hitPoint, cameraWorldPosition)
-                if case .customer = t { return dist <= 4.0 ? t : nil }
-                return dist <= 2.6 ? t : nil
+                switch t {
+                case .item: return dist <= Float(game.pickupReach) ? t : nil
+                default: return dist <= 2.7 ? t : nil
+                }
             }
             n = cur.parent
         }
@@ -576,17 +512,10 @@ final class GameWorld {
     }
 
     private func parseTarget(_ name: String) -> Target? {
-        let parts = name.split(separator: ":")
-        let head = parts.first.map { String($0) } ?? ""
-        switch head {
+        let parts = name.split(separator: ":").map { String($0) }
+        switch parts.first ?? "" {
+        case "item": if parts.count == 2, let i = Int(parts[1]), floorItems[i] != nil { return .item(i) }
         case "slot": if parts.count == 3, let f = Int(parts[1]), let s = Int(parts[2]) { return .slot(f, s) }
-        case "fbox": if parts.count == 2, let i = Int(parts[1]) { return .floorBox(i) }
-        case "belt": if parts.count == 2, let i = Int(parts[1]) { return .beltItem(i) }
-        case "cust": if parts.count == 2, let i = Int(parts[1]) { return .customer(i) }
-        case "terminal": return .terminal
-        case "register": return .register
-        case "computer": return .computer
-        case "sign": return .sign
         case "bin": return .bin
         default: break
         }
@@ -595,14 +524,8 @@ final class GameWorld {
 
     func node(for t: Target) -> SCNNode? {
         switch t {
+        case let .item(id): return floorItems[id]?.node
         case let .slot(f, s): return fixtures[safe: f]?.slots[safe: s]?.hitNode
-        case let .floorBox(id): return floorBoxes.first { $0.id == id }?.node
-        case let .beltItem(i): return belt[safe: i]?.node
-        case .customer: return nil
-        case .terminal: return scene.rootNode.childNode(withName: "terminal", recursively: false)
-        case .register: return scene.rootNode.childNode(withName: "register", recursively: false)
-        case .computer: return scene.rootNode.childNode(withName: "computer", recursively: false)
-        case .sign: return signNode
         case .bin: return scene.rootNode.childNode(withName: "bin", recursively: false)
         }
     }
@@ -612,9 +535,10 @@ final class GameWorld {
             highlightNode.isHidden = true
             return
         }
-        let (mn, mx) = n.boundingBox
+        var (mn, mx) = n.boundingBox
+        if case .bin = t { mn.y = 0; mx.y = 0.9 }
         let center = SIMD3<Float>((mn.x + mx.x) / 2, (mn.y + mx.y) / 2, (mn.z + mx.z) / 2)
-        let size = SIMD3<Float>(mx.x - mn.x, mx.y - mn.y, mx.z - mn.z) * 1.04 + 0.01
+        let size = SIMD3<Float>(mx.x - mn.x, mx.y - mn.y, mx.z - mn.z) * 1.06 + 0.01
         var m = matrix_identity_float4x4
         m.columns.3 = SIMD4(center, 1)
         var sc = matrix_identity_float4x4
@@ -625,45 +549,59 @@ final class GameWorld {
         highlightNode.isHidden = false
     }
 
-    // MARK: Feedback helpers
+    // MARK: Helpers
 
-    func toast(_ text: String, _ style: ToastStyle = .info) {
-        onToast?(text, style)
+    func toast(_ text: String, _ style: ToastStyle = .info) { onToast?(text, style) }
+
+    func refreshSigns() {
+        for f in fixtures {
+            f.refreshLabels(showLabels: display.showRowLabels, signScale: Float(display.signScale),
+                            glow: scannerCategory != nil, glowCategory: scannerCategory)
+        }
     }
 
-    func popup(_ text: String, at p: SIMD3<Float>, color: UInt32) {
-        let n = Models.billboardText(text, color: .white, bg: UIColor(hex: color, alpha: 0.85), width: Float(max(0.5, Double(text.count) * 0.09)), height: 0.2, fontSize: 56)
+    func refreshTags() {
+        let show = display.showShelfTags
+        for f in fixtures { for s in f.slots { s.refreshTag(visible: show) } }
+    }
+
+    func sparkle(at p: SIMD3<Float>, big: Bool) {
+        guard display.sparkles, !display.reduceMotion else { return }
+        let ps = SCNParticleSystem()
+        ps.birthRate = big ? 900 : 350
+        ps.emissionDuration = 0.08
+        ps.loops = false
+        ps.particleLifeSpan = big ? 0.9 : 0.55
+        ps.particleVelocity = big ? 1.6 : 1.0
+        ps.particleVelocityVariation = 0.6
+        ps.spreadingAngle = 180
+        ps.particleSize = 0.018
+        ps.particleColor = UIColor(hex: big ? 0xFFD54A : 0x7CFFB2)
+        ps.particleColorVariation = SCNVector4(0.1, 0.1, 0.1, 0)
+        ps.acceleration = SCNVector3(0, -2.5, 0)
+        ps.blendMode = .additive
+        ps.isLightingEnabled = false
+        let n = SCNNode()
         n.simdPosition = p
+        n.addParticleSystem(ps)
         scene.rootNode.addChildNode(n)
-        let rise = SCNAction.moveBy(x: 0, y: 0.6, z: 0, duration: 1.4)
-        rise.timingMode = .easeOut
-        n.runAction(.sequence([.group([rise, .sequence([.wait(duration: 0.9), .fadeOut(duration: 0.5)])]), .removeFromParentNode()]))
+        n.runAction(.sequence([.wait(duration: 1.6), .removeFromParentNode()]))
     }
 
-    func refreshAllTags() {
-        let show = display.showPriceTags
-        for f in fixtures {
-            for s in f.slots {
-                s.refreshTag(price: s.product.flatMap { prices[$0] }, symbol: symbol, visible: show)
-            }
-        }
+    var remaining: Int {
+        var n = floorItems.count + basket.count
+        for f in fixtures { for s in f.slots { n += s.wrongCount } }
+        return n
     }
 
-    func refreshTags(for product: String) {
-        let show = display.showPriceTags
-        for f in fixtures {
-            for s in f.slots where s.product == product {
-                s.refreshTag(price: prices[product], symbol: symbol, visible: show)
-            }
-        }
+    var progress: Double {
+        guard total > 0 else { return 1 }
+        return 1 - Double(remaining) / Double(total)
     }
 
-    func clockString() -> String {
-        let minutes = Int(8 * 60 + clock * 720)
-        let h = minutes / 60, m = (minutes % 60) / 5 * 5
-        if display.use24hClock { return String(format: "%02d:%02d", h, m) }
-        let h12 = h % 12 == 0 ? 12 : h % 12
-        return String(format: "%d:%02d %@", h12, m, h < 12 ? "AM" : "PM")
+    func timeString(_ t: Double? = nil) -> String {
+        let v = Int(t ?? elapsed)
+        return String(format: "%d:%02d", v / 60, v % 60)
     }
 }
 

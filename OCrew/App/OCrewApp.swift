@@ -32,7 +32,8 @@ struct RootView: View {
                     GameContainer(
                         level: lvl,
                         onExit: { withAnimation { screen = .menu } },
-                        onRestartDay: { screen = .game(id, UUID()) })
+                        onRestart: { screen = .game(id, UUID()) },
+                        onNext: { next in screen = .game(next.id, UUID()) })
                         .id(token)
                         .ignoresSafeArea()
                         .defersSystemGestures(on: .all)

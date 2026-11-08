@@ -41,23 +41,24 @@ struct SettingsView: View {
             SliderRow(title: "HUD size", value: $store.display.hudScale, range: 0.7...1.5, format: pct)
             SliderRow(title: "HUD opacity", value: $store.display.hudOpacity, range: 0.3...1, format: pct)
             SliderRow(title: "Text size", value: $store.display.textScale, range: 0.8...1.5, format: pct)
-            PickerRow(title: "Currency symbol", selection: $store.display.currencySymbol, options: ["$", "£", "€", "¥", "₩", "₹", "R$", "kr"].map { ($0, $0) })
+            SliderRow(title: "Basket bar size", value: $store.display.basketBarScale, range: 0.7...1.5, format: pct)
         }
         Section2("HUD elements") {
-            ToggleRow(title: "Show money", isOn: $store.display.showMoney)
-            ToggleRow(title: "Show store rating", isOn: $store.display.showRating)
-            ToggleRow(title: "Show clock", isOn: $store.display.showClock)
-            ToggleRow(title: "24-hour clock", isOn: $store.display.use24hClock)
+            ToggleRow(title: "Timer", isOn: $store.display.showTimer)
+            ToggleRow(title: "Items-left counter", isOn: $store.display.showRemaining)
+            ToggleRow(title: "Progress bar", isOn: $store.display.showProgressBar)
+            ToggleRow(title: "Counts on basket items", isOn: $store.display.basketCounts)
             ToggleRow(title: "Interaction prompts", isOn: $store.display.showPrompts)
             ToggleRow(title: "Skill & button labels", isOn: $store.display.showSkillLabels)
             ToggleRow(title: "Notifications", isOn: $store.display.showToasts)
             ToggleRow(title: "FPS counter", isOn: $store.display.showFPS)
         }
-        Section2("In the world") {
-            ToggleRow(title: "Price tags on shelves", isOn: $store.display.showPriceTags)
-            ToggleRow(title: "Customer patience bars", isOn: $store.display.showPatienceBars)
-            ToggleRow(title: "Money popups at register", isOn: $store.display.showMoneyPopups)
+        Section2("In the store") {
+            ToggleRow(title: "Shelf row labels", isOn: $store.display.showRowLabels)
+            SliderRow(title: "Aisle sign size", value: $store.display.signScale, range: 0.7...1.4, format: pct)
+            ToggleRow(title: "Product name tags on filled spots", isOn: $store.display.showShelfTags)
             ToggleRow(title: "Highlight what you're looking at", isOn: $store.display.highlightFocused)
+            ToggleRow(title: "Sparkles when a spot is done", isOn: $store.display.sparkles)
         }
         Section2("Crosshair") {
             PickerRow(title: "Style", selection: $store.display.crosshair, options: CrosshairStyle.allCases.map { ($0, $0.label) })
@@ -82,7 +83,7 @@ struct SettingsView: View {
         }
         Section2("Interaction") {
             ToggleRow(title: "Tap the world to interact", isOn: $store.display.tapToInteract)
-            ToggleRow(title: "Hold Use button to keep stocking", isOn: $store.display.holdToRepeatStock)
+            ToggleRow(title: "Hold hand button to keep grabbing/placing", isOn: $store.display.holdToRepeat)
         }
         Section2("Look") {
             SliderRow(title: "Look sensitivity", value: $store.display.lookSensitivity, range: 0.3...2.5, format: pct)
@@ -96,33 +97,29 @@ struct SettingsView: View {
             PickerRow(title: "Preset", selection: Binding(
                 get: { store.game.difficulty },
                 set: { store.game.apply($0) }), options: Difficulty.allCases.map { ($0, $0.label) })
-            Text("Changing any rule below switches to Custom. Rules apply from the next day if you're mid-game.")
+            Text("Changing any rule below switches to Custom. Mess size and twists apply when a level starts fresh.")
                 .font(.system(size: 12)).foregroundColor(Color(hex: Theme.dim))
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
-        Section2("Day & customers") {
-            SliderRow(title: "Day length", value: g(\.dayLengthMinutes), range: 4...25, step: 1, format: { "\(Int($0)) min" })
-            SliderRow(title: "Customer traffic", value: g(\.customerRate), range: 0.3...2.5, format: pct)
-            SliderRow(title: "Customer patience", value: g(\.customerPatience), range: 0.4...2.5, format: pct)
-            SliderRow(title: "Price sensitivity", value: g(\.priceSensitivity), range: 0.3...2.5, format: pct)
-            SliderRow(title: "Shoplifters", value: g(\.theftRate), range: 0...3, format: pct)
-            SliderRow(title: "Customers paying cash", value: g(\.cashCustomerShare), range: 0...1, format: pct)
-            ToggleRow(title: "Shoppers finish at closing time", isOn: g(\.finishShoppersAtClose))
-            ToggleRow(title: "Harsh out-of-stock penalty", isOn: g(\.outOfStockPenalty))
-        }
-        Section2("Economy") {
-            SliderRow(title: "Starting cash", value: g(\.startingCash), range: 0.5...3, format: pct)
-            SliderRow(title: "Rent", value: g(\.rentMultiplier), range: 0...2, format: pct)
-            PickerRow(title: "Delivery speed", selection: g(\.delivery), options: DeliverySpeed.allCases.map { ($0, $0.label) })
-        }
-        Section2("You") {
+        Section2("Basket & reach") {
+            SliderRow(title: "Basket capacity", value: g(\.basketCapacity), range: 4...30, step: 1, format: { "\(Int($0)) items" })
+            SliderRow(title: "Pickup reach", value: g(\.pickupReach), range: 1.8...4, step: 0.1, format: { String(format: "%.1f m", $0) })
             SliderRow(title: "Walk speed", value: g(\.walkSpeed), range: 0.7...1.6, format: pct)
-            SliderRow(title: "Skill cooldowns", value: g(\.skillCooldown), range: 0.3...2, format: pct)
         }
-        Section2("Checkout & helpers") {
-            ToggleRow(title: "Count out cash change yourself", isOn: g(\.manualChange))
-            ToggleRow(title: "Show how much change is due", isOn: g(\.showChangeDue))
-            ToggleRow(title: "Auto-toss empty boxes", isOn: g(\.autoDiscardEmptyBoxes))
+        Section2("The mess") {
+            SliderRow(title: "Mess size", value: g(\.messSize), range: 0.4...1.5, format: pct)
+            ToggleRow(title: "Items start on wrong shelves", isOn: g(\.misplacedItems))
+            ToggleRow(title: "Expired items to throw out", isOn: g(\.expiredItems))
+            ToggleRow(title: "Knocked-over items", isOn: g(\.tippedItems))
+        }
+        Section2("Sorting rules") {
+            ToggleRow(title: "Ding when an item is in the right section", isOn: g(\.placementFeedback))
+            ToggleRow(title: "Auto-pick matching item for a spot", isOn: g(\.autoMatch))
+            ToggleRow(title: "Keep identical items together", isOn: g(\.keepTogether))
+        }
+        Section2("Timing") {
+            SliderRow(title: "Star time targets", value: g(\.parTimeScale), range: 0.5...2, format: pct)
+            SliderRow(title: "Skill cooldowns", value: g(\.skillCooldown), range: 0.3...2, format: pct)
             ToggleRow(title: "Tutorial tips", isOn: g(\.showTutorial))
         }
         resetButton("Reset game rules") { store.resetGame() }

@@ -56,14 +56,20 @@ def bell(f, dur):
     return [(math.sin(2*math.pi*f*i/RATE) + 0.5*math.sin(2*math.pi*f*2.76*i/RATE) + 0.25*math.sin(2*math.pi*f*5.4*i/RATE))
             * math.exp(-6 * i / n) for i in range(n)]
 
-write("scan", tone(1850, 0.09, "square", release=0.3))
+
 write("place", mix(tone(190, 0.07, "sine", sweep=90, release=0.9), [v * 0.4 for v in noise(0.05, lowpass=0.5)]))
 write("pickup", tone(380, 0.08, "sine", sweep=620, release=0.5))
-write("cash", concat(mix(noise(0.05, lowpass=0.6), tone(900, 0.05, "square")), bell(1318, 0.45)))
+
 write("chime", concat(bell(659, 0.32), bell(523, 0.55)))
 write("error", tone(200, 0.16, "square", release=0.4))
 write("skill", [v * (1 - i / (RATE * 0.35)) for i, v in enumerate(mix(noise(0.35, lowpass=0.08), tone(300, 0.35, "sine", sweep=900)))])
-write("alarm", concat(tone(880, 0.12, "square"), tone(660, 0.12, "square"), tone(880, 0.12, "square")))
-write("order", concat(tone(988, 0.07), tone(1319, 0.11)))
+
+
 write("fanfare", concat(tone(523, 0.12), tone(659, 0.12), tone(784, 0.12), tone(1047, 0.35, release=0.8)))
+write("ding", concat(bell(1568, 0.18), bell(2093, 0.35)))
+write("bonk", tone(150, 0.12, "sine", sweep=95, release=0.7))
+write("pop", tone(520, 0.06, "sine", sweep=900, release=0.6))
+write("magnet", [v * min(1, i / (RATE * 0.25)) for i, v in enumerate(mix(tone(220, 0.45, "sine", sweep=660), [x * 0.4 for x in noise(0.45, lowpass=0.05)]))])
+write("toss", mix(noise(0.18, lowpass=0.3), tone(260, 0.12, "sine", sweep=120)))
+write("complete", concat(tone(523, 0.1), tone(659, 0.1), tone(784, 0.1), bell(1047, 0.25), bell(1319, 0.6)))
 print("ok")

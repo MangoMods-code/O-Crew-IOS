@@ -126,25 +126,127 @@ final class PillLabel: UILabel {
     }
 }
 
+/// Row of basket contents; tap one to choose what you'll place next.
+final class BasketBar: UIView {
+    var onSelect: ((String) -> Void)?
+    private var buttons: [UIButton] = []
+    private var keys: [String] = []
+    private let countLabel = UILabel()
+    private let bg = UIView()
+    var scale: CGFloat = 1
+    var showCounts = true
+    var colorblind: ColorblindMode = .off
+
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        bg.backgroundColor = UIColor(white: 0, alpha: 0.45)
+        bg.layer.cornerRadius = 16
+        bg.isUserInteractionEnabled = false
+        addSubview(bg)
+        countLabel.textColor = .white
+        countLabel.textAlignment = .center
+        countLabel.font = .monospacedDigitSystemFont(ofSize: 13, weight: .heavy)
+        addSubview(countLabel)
+    }
+    required init?(coder: NSCoder) { fatalError() }
+
+    func update(groups: [BasketGroup], selected: String?, used: Int, capacity: Int) {
+        countLabel.text = "\(used)/\(capacity)"
+        countLabel.textColor = used >= capacity ? UIColor(hex: StatusPalette.bad(colorblind)) : .white
+        let newKeys = groups.map { $0.key }
+        if newKeys != keys {
+            buttons.forEach { $0.removeFromSuperview() }
+            buttons = []
+            keys = newKeys
+            for g in groups {
+                let b = UIButton(type: .custom)
+                if let p = Catalog.product(g.product) { b.setImage(Models.labelImage(for: p), for: .normal) }
+                b.imageView?.contentMode = .scaleAspectFill
+                b.clipsToBounds = true
+                b.layer.cornerRadius = 10
+                let key = g.key
+                b.addAction(UIAction { [weak self] _ in self?.onSelect?(key) }, for: .touchUpInside)
+                let badge = UILabel()
+                badge.tag = 77
+                badge.font = .systemFont(ofSize: 12, weight: .black)
+                badge.textColor = .white
+                badge.textAlignment = .center
+                badge.backgroundColor = UIColor(white: 0, alpha: 0.7)
+                badge.layer.cornerRadius = 8
+                badge.layer.masksToBounds = true
+                b.addSubview(badge)
+                if g.expired {
+                    let x = UIImageView(image: UIImage(systemName: "xmark.octagon.fill"))
+                    x.tag = 78
+                    x.tintColor = UIColor(hex: 0xE02424)
+                    x.backgroundColor = .white
+                    x.layer.cornerRadius = 9
+                    x.clipsToBounds = true
+                    b.addSubview(x)
+                }
+                addSubview(b)
+                buttons.append(b)
+            }
+        }
+        for (i, g) in groups.enumerated() where i < buttons.count {
+            let b = buttons[i]
+            let sel = g.key == selected
+            b.layer.borderWidth = sel ? 3 : 1
+            b.layer.borderColor = sel ? UIColor(hex: Theme.brand).cgColor : UIColor(white: 1, alpha: 0.35).cgColor
+            b.alpha = sel ? 1 : 0.8
+            if let badge = b.viewWithTag(77) as? UILabel {
+                badge.text = "\(g.count)"
+                badge.isHidden = !showCounts
+            }
+        }
+        setNeedsLayout()
+    }
+
+    var preferredWidth: CGFloat {
+        let s = 46 * scale
+        return CGFloat(max(1, buttons.count)) * (s + 6) + 56 * scale
+    }
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        let s = 46 * scale
+        bg.frame = bounds
+        countLabel.frame = CGRect(x: 6, y: 0, width: 44 * scale, height: bounds.height)
+        var x = 52 * scale
+        for b in buttons {
+            b.frame = CGRect(x: x, y: (bounds.height - s) / 2, width: s, height: s)
+            if let badge = b.viewWithTag(77) {
+                badge.frame = CGRect(x: s - 22, y: s - 18, width: 20, height: 16)
+            }
+            if let xmark = b.viewWithTag(78) {
+                xmark.frame = CGRect(x: 2, y: 2, width: 18, height: 18)
+            }
+            x += s + 6
+        }
+    }
+}
+
 /// Everything drawn over the 3D view. Touches that miss a button fall through to the controls layer.
 final class HUDView: UIView {
-    let moneyLabel = UILabel()
-    let dayLabel = UILabel()
-    let ratingLabel = UILabel()
+    let timerLabel = UILabel()
+    let levelLabel = UILabel()
+    let remainingLabel = UILabel()
     let infoPanel = UIView()
-    let clockLabel = PillLabel()
-    let phaseLabel = PillLabel()
+    let progressTrack = UIView()
+    let progressFill = UIView()
     let promptLabel = PillLabel()
     let toastLabel = PillLabel()
     let tipLabel = PillLabel()
     let fpsLabel = UILabel()
     let crosshair = CrosshairView()
+    let basketBar = BasketBar()
     let pauseButton = RoundButton(symbol: "pause.fill")
     let interactButton = RoundButton(symbol: "hand.tap.fill")
     let dropButton = RoundButton(symbol: "arrow.down.to.line")
     private(set) var skillButtons: [SkillID: RoundButton] = [:]
 
     private var settings = DisplaySettings()
+    private var progressValue: CGFloat = 0
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -153,11 +255,17 @@ final class HUDView: UIView {
         infoPanel.layer.cornerRadius = 14
         infoPanel.isUserInteractionEnabled = false
         addSubview(infoPanel)
-        for l in [moneyLabel, dayLabel, ratingLabel] {
+        for l in [timerLabel, levelLabel, remainingLabel] {
             l.textColor = .white
             infoPanel.addSubview(l)
         }
-        for p in [clockLabel, phaseLabel, promptLabel, toastLabel, tipLabel] {
+        progressTrack.backgroundColor = UIColor(white: 1, alpha: 0.18)
+        progressTrack.layer.cornerRadius = 4
+        progressTrack.isUserInteractionEnabled = false
+        progressFill.layer.cornerRadius = 4
+        progressTrack.addSubview(progressFill)
+        addSubview(progressTrack)
+        for p in [promptLabel, toastLabel, tipLabel] {
             p.textColor = .white
             p.textAlignment = .center
             p.layer.masksToBounds = true
@@ -172,6 +280,7 @@ final class HUDView: UIView {
         fpsLabel.font = .monospacedDigitSystemFont(ofSize: 11, weight: .semibold)
         addSubview(fpsLabel)
         addSubview(crosshair)
+        addSubview(basketBar)
 
         addSubview(pauseButton)
         addSubview(interactButton)
@@ -191,7 +300,7 @@ final class HUDView: UIView {
 
     override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
         let v = super.hitTest(point, with: event)
-        return v === self ? nil : v
+        return v === self || v === basketBar ? nil : v
     }
 
     func apply(_ d: DisplaySettings) {
@@ -200,23 +309,27 @@ final class HUDView: UIView {
         let ts = CGFloat(d.textScale)
         let bg = UIColor(white: 0, alpha: d.highContrastHUD ? 0.85 : 0.45)
         infoPanel.backgroundColor = bg
-        moneyLabel.font = .monospacedDigitSystemFont(ofSize: 22 * ts, weight: .heavy)
-        dayLabel.font = .systemFont(ofSize: 12 * ts, weight: .semibold)
-        ratingLabel.font = .systemFont(ofSize: 12 * ts, weight: .semibold)
-        clockLabel.font = .monospacedDigitSystemFont(ofSize: 15 * ts, weight: .bold)
-        phaseLabel.font = .systemFont(ofSize: 11 * ts, weight: .heavy)
+        timerLabel.font = .monospacedDigitSystemFont(ofSize: 24 * ts, weight: .heavy)
+        levelLabel.font = .systemFont(ofSize: 11 * ts, weight: .semibold)
+        remainingLabel.font = .systemFont(ofSize: 13 * ts, weight: .bold)
+        levelLabel.textColor = UIColor(white: 1, alpha: 0.75)
         promptLabel.font = .systemFont(ofSize: 14 * ts, weight: .semibold)
         toastLabel.font = .systemFont(ofSize: 14 * ts, weight: .semibold)
         tipLabel.font = .systemFont(ofSize: 13 * ts, weight: .semibold)
-        for p in [clockLabel, promptLabel, toastLabel] { p.backgroundColor = bg }
-        tipLabel.backgroundColor = UIColor(hex: 0x1F618D, alpha: d.highContrastHUD ? 0.95 : 0.8)
+        for p in [promptLabel, toastLabel] { p.backgroundColor = bg }
+        tipLabel.backgroundColor = UIColor(hex: 0x1F618D, alpha: d.highContrastHUD ? 0.95 : 0.85)
+        progressFill.backgroundColor = UIColor(hex: StatusPalette.good(d.colorblind))
+        progressTrack.isHidden = !d.showProgressBar
         crosshair.style = d.crosshair
         crosshair.color = UIColor(hex: d.crosshairColor.hex)
         crosshair.isHidden = d.crosshair == .none
-        moneyLabel.isHidden = !d.showMoney
-        ratingLabel.isHidden = !d.showRating
-        clockLabel.isHidden = !d.showClock
+        timerLabel.isHidden = !d.showTimer
+        remainingLabel.isHidden = !d.showRemaining
         fpsLabel.isHidden = !d.showFPS
+        basketBar.scale = CGFloat(d.basketBarScale) * CGFloat(d.hudScale)
+        basketBar.showCounts = d.basketCounts
+        basketBar.colorblind = d.colorblind
+        basketBar.subviews.first?.backgroundColor = bg
         for b in skillButtons.values { b.caption.isHidden = !d.showSkillLabels }
         interactButton.caption.isHidden = !d.showSkillLabels
         dropButton.caption.isHidden = !d.showSkillLabels
@@ -236,37 +349,36 @@ final class HUDView: UIView {
         let left = inset.left + 14, right = bounds.width - inset.right - 14
         let top = max(inset.top, 8) + 6
 
-        // Info panel
-        moneyLabel.sizeToFit(); dayLabel.sizeToFit(); ratingLabel.sizeToFit()
-        let panelW = max(moneyLabel.bounds.width, dayLabel.bounds.width, ratingLabel.bounds.width) + 24
-        let panelH = moneyLabel.bounds.height + dayLabel.bounds.height + (ratingLabel.isHidden ? 0 : ratingLabel.bounds.height) + 16
-        infoPanel.frame = CGRect(x: d.leftHanded ? right - panelW - 50 * hs : left, y: top, width: panelW, height: panelH)
-        moneyLabel.frame.origin = CGPoint(x: 12, y: 6)
-        dayLabel.frame.origin = CGPoint(x: 12, y: moneyLabel.frame.maxY + 1)
-        ratingLabel.frame.origin = CGPoint(x: 12, y: dayLabel.frame.maxY + 1)
+        // Info panel (timer, level, remaining) — top-left, or top-right when left-handed
+        timerLabel.sizeToFit(); levelLabel.sizeToFit(); remainingLabel.sizeToFit()
+        let panelW = max(timerLabel.bounds.width, levelLabel.bounds.width, remainingLabel.bounds.width) + 24
+        var h: CGFloat = 8 + levelLabel.bounds.height
+        if !timerLabel.isHidden { h += timerLabel.bounds.height }
+        if !remainingLabel.isHidden { h += remainingLabel.bounds.height }
+        h += 8
+        infoPanel.frame = CGRect(x: d.leftHanded ? right - panelW - 50 * hs : left, y: top, width: panelW, height: h)
+        var y: CGFloat = 6
+        levelLabel.frame.origin = CGPoint(x: 12, y: y); y += levelLabel.bounds.height
+        if !timerLabel.isHidden { timerLabel.frame.origin = CGPoint(x: 12, y: y); y += timerLabel.bounds.height }
+        remainingLabel.frame.origin = CGPoint(x: 12, y: y)
         fpsLabel.sizeToFit()
         fpsLabel.frame.origin = CGPoint(x: infoPanel.frame.minX + 4, y: infoPanel.frame.maxY + 4)
 
-        // Pause (opposite corner of panel)
         let ps = 40 * hs
         pauseButton.frame = CGRect(x: d.leftHanded ? left : right - ps, y: top, width: ps, height: ps)
 
-        // Clock + phase
-        clockLabel.sizeToFit(); phaseLabel.sizeToFit()
-        let cw = clockLabel.bounds.width + phaseLabel.bounds.width + 6
-        clockLabel.frame = CGRect(x: bounds.midX - cw / 2, y: top, width: clockLabel.bounds.width, height: clockLabel.bounds.height)
-        phaseLabel.frame = CGRect(x: clockLabel.frame.maxX + 6, y: top + (clockLabel.bounds.height - phaseLabel.bounds.height) / 2,
-                                  width: phaseLabel.bounds.width, height: phaseLabel.bounds.height)
-        clockLabel.layer.cornerRadius = clockLabel.bounds.height / 2
-        phaseLabel.layer.cornerRadius = phaseLabel.bounds.height / 2
+        // Progress bar at top center
+        let pw = min(bounds.width * 0.32, 300)
+        progressTrack.frame = CGRect(x: bounds.midX - pw / 2, y: top + 6, width: pw, height: 8)
+        progressFill.frame = CGRect(x: 0, y: 0, width: max(8, pw * progressValue), height: 8)
 
-        // Tip + toast under the clock
+        // Tip + toast under the progress bar
         let maxW = min(bounds.width * 0.5, 460)
         let tipSize = tipLabel.sizeThatFits(CGSize(width: maxW, height: 200))
-        tipLabel.frame = CGRect(x: bounds.midX - min(maxW, tipSize.width) / 2, y: clockLabel.frame.maxY + 8,
+        tipLabel.frame = CGRect(x: bounds.midX - min(maxW, tipSize.width) / 2, y: progressTrack.frame.maxY + 10,
                                 width: min(maxW, tipSize.width), height: tipSize.height)
         tipLabel.layer.cornerRadius = 12
-        let toastTop = tipLabel.isHidden ? clockLabel.frame.maxY + 8 : tipLabel.frame.maxY + 6
+        let toastTop = tipLabel.isHidden ? progressTrack.frame.maxY + 10 : tipLabel.frame.maxY + 6
         let toastSize = toastLabel.sizeThatFits(CGSize(width: maxW, height: 100))
         toastLabel.frame = CGRect(x: bounds.midX - min(maxW, toastSize.width) / 2, y: toastTop,
                                   width: min(maxW, toastSize.width), height: toastSize.height)
@@ -280,6 +392,11 @@ final class HUDView: UIView {
                                    width: promptSize.width, height: promptSize.height)
         promptLabel.layer.cornerRadius = promptSize.height / 2
 
+        // Basket bar bottom center
+        let bh = 58 * basketBar.scale
+        let bw = min(basketBar.preferredWidth, bounds.width * 0.5)
+        basketBar.frame = CGRect(x: bounds.midX - bw / 2, y: bounds.height - max(inset.bottom, 8) - bh - 6, width: bw, height: bh)
+
         // Action cluster
         let big = 78 * bs, mid = 52 * bs, small = 48 * bs
         let bottom = bounds.height - max(inset.bottom, 10) - 24 * hs
@@ -287,8 +404,6 @@ final class HUDView: UIView {
         interactButton.frame = CGRect(x: anchorX, y: bottom - big, width: big, height: big)
         let dropX = d.leftHanded ? interactButton.frame.maxX + 16 * hs : interactButton.frame.minX - 16 * hs - mid
         dropButton.frame = CGRect(x: dropX, y: bottom - mid, width: mid, height: mid)
-
-        // Skills arc above/beside the main button
         let center = CGPoint(x: interactButton.frame.midX, y: interactButton.frame.midY)
         let radius = big / 2 + small / 2 + 78 * bs
         let angles: [CGFloat] = [-90, -112, -134, -156, -178].map { $0 * .pi / 180 }
@@ -296,8 +411,8 @@ final class HUDView: UIView {
             guard let b = skillButtons[s] else { continue }
             let a = angles[i]
             let x = center.x + cos(a) * radius * (d.leftHanded ? -1 : 1)
-            let y = center.y + sin(a) * radius
-            b.frame = CGRect(x: x - small / 2, y: y - small / 2, width: small, height: small)
+            let yy = center.y + sin(a) * radius
+            b.frame = CGRect(x: x - small / 2, y: yy - small / 2, width: small, height: small)
         }
     }
 
@@ -335,25 +450,17 @@ final class HUDView: UIView {
         })
     }
 
-    func setStatus(money: String, day: String, rating: Double, clock: String, phase: Phase) {
-        if moneyLabel.text != money { moneyLabel.text = money; setNeedsLayout() }
-        if dayLabel.text != day { dayLabel.text = day; setNeedsLayout() }
-        let stars = String(format: "★ %.1f", rating)
-        if ratingLabel.text != stars { ratingLabel.text = stars; setNeedsLayout() }
-        ratingLabel.textColor = UIColor(hex: StatusPalette.forLevel(rating / 5, settings.colorblind))
-        if clockLabel.text != clock { clockLabel.text = clock; setNeedsLayout() }
-        let pair: (String, UInt32)
-        switch phase {
-        case .prep: pair = ("PREP", 0x5D6D7E)
-        case .open: pair = ("OPEN", StatusPalette.good(settings.colorblind))
-        case .closing: pair = ("CLOSING", 0xB9770E)
-        case .ended: pair = ("CLOSED", StatusPalette.bad(settings.colorblind))
-        }
-        let (text, color) = pair
-        if phaseLabel.text != text {
-            phaseLabel.text = text
-            phaseLabel.backgroundColor = UIColor(hex: color, alpha: 0.9)
-            setNeedsLayout()
+    func setStatus(level: String, time: String, frozen: Bool, remaining: Int, progress: Double) {
+        if levelLabel.text != level { levelLabel.text = level; setNeedsLayout() }
+        if timerLabel.text != time { timerLabel.text = time; setNeedsLayout() }
+        timerLabel.textColor = frozen ? UIColor(hex: 0x7FDBFF) : .white
+        let rem = remaining == 1 ? "1 item left" : "\(remaining) items left"
+        if remainingLabel.text != rem { remainingLabel.text = rem; setNeedsLayout() }
+        let p = CGFloat(max(0, min(1, progress)))
+        if abs(p - progressValue) > 0.001 {
+            progressValue = p
+            let pw = progressTrack.bounds.width
+            progressFill.frame = CGRect(x: 0, y: 0, width: max(8, pw * p), height: 8)
         }
     }
 }

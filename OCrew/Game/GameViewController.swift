@@ -4,9 +4,10 @@ import SwiftUI
 import Combine
 
 final class GameViewController: UIViewController {
-    let level: StoreLevel
+    let level: OrgLevel
     var onExit: (() -> Void)?
-    var onRestartDay: (() -> Void)?
+    var onRestart: (() -> Void)?
+    var onNext: ((OrgLevel) -> Void)?
 
     private var world: GameWorld!
     private let scnView = SCNView()
@@ -23,8 +24,9 @@ final class GameViewController: UIViewController {
     private var overlayOpen = false
     private var cancellables = Set<AnyCancellable>()
     private var hitFrame = 0
+    private var lastSave: Double = 0
 
-    init(level: StoreLevel) {
+    init(level: OrgLevel) {
         self.level = level
         super.init(nibName: nil, bundle: nil)
     }
@@ -47,7 +49,6 @@ final class GameViewController: UIViewController {
         scnView.backgroundColor = UIColor(hex: 0x9CC9EA)
         scnView.antialiasingMode = .multisampling4X
         scnView.rendersContinuously = true
-        scnView.isJitteringEnabled = false
         view.addSubview(scnView)
 
         controls.frame = view.bounds
@@ -63,34 +64,31 @@ final class GameViewController: UIViewController {
         hud.interactButton.addTarget(self, action: #selector(interactUp), for: [.touchUpInside, .touchUpOutside, .touchCancel])
         hud.dropButton.addTarget(self, action: #selector(dropTapped), for: .touchUpInside)
         for (id, b) in hud.skillButtons {
-            b.addAction(UIAction { [weak self] _ in
-                guard let self = self else { return }
-                self.world.useSkill(id, focus: self.focus)
-            }, for: .touchUpInside)
+            b.addAction(UIAction { [weak self] _ in self?.world.useSkill(id) }, for: .touchUpInside)
         }
+        hud.basketBar.onSelect = { [weak self] key in self?.world.select(key) }
 
-        wireWorld()
+        world.onToast = { [weak self] text, style in self?.hud.showToast(text, style: style) }
+        world.onBasketChanged = { [weak self] in self?.refreshBasket() }
+        world.onComplete = { [weak self] r in self?.showComplete(r) }
+
         applySettings(SettingsStore.shared.display)
         SettingsStore.shared.$display
+            .dropFirst()
             .receive(on: RunLoop.main)
             .sink { [weak self] d in self?.applySettings(d) }
             .store(in: &cancellables)
+        NotificationCenter.default.publisher(for: UIApplication.willResignActiveNotification)
+            .sink { [weak self] _ in self?.world.snapshot() }
+            .store(in: &cancellables)
 
-        if world.tutorialActive {
-            hud.showToast("Welcome to \(level.name)!", style: .good)
-        } else {
-            hud.showToast("Day \(world.day) of \(level.days) — stock up, then flip the sign to OPEN", style: .info)
-        }
+        refreshBasket()
+        hud.showToast("\(level.title) — \(level.stageName). Put every item back where it belongs!", style: .info)
     }
 
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         startLoop()
-    }
-
-    override func viewWillDisappear(_ animated: Bool) {
-        super.viewWillDisappear(animated)
-        if presentedViewController == nil { stopLoop() }
     }
 
     private func startLoop() {
@@ -116,16 +114,16 @@ final class GameViewController: UIViewController {
     private func applySettings(_ d: DisplaySettings) {
         hud.apply(d)
         controls.apply(d)
-        world?.refreshAllTags()
+        world?.refreshSigns()
+        world?.refreshTags()
         if let link = displayLink { configureFrameRate(link) }
+        refreshBasket()
     }
 
-    private func wireWorld() {
-        world.onToast = { [weak self] text, style in self?.hud.showToast(text, style: style) }
-        world.onOpenComputer = { [weak self] in self?.openComputer(priceFocus: nil) }
-        world.onOpenPrice = { [weak self] id in self?.openComputer(priceFocus: id) }
-        world.onRequestChange = { [weak self] req in self?.openChange(req) }
-        world.onDayEnded = { [weak self] s in self?.openSummary(s) }
+    private func refreshBasket() {
+        guard let w = world else { return }
+        hud.basketBar.update(groups: w.basketGroups, selected: w.selectedKey, used: w.basket.count, capacity: w.capacity)
+        hud.setNeedsLayout()
     }
 
     // MARK: Loop
@@ -140,21 +138,36 @@ final class GameViewController: UIViewController {
             world.look(dx: Float(look.x), dy: Float(look.y))
             world.update(dt: dt, move: controls.moveVector)
 
-            // Focus: what's under the crosshair
             hitFrame += 1
             if hitFrame % 2 == 0 {
                 focus = hitTarget(at: CGPoint(x: scnView.bounds.midX, y: scnView.bounds.midY))
                 world.setHighlight(focus)
             }
-            // Hold-to-repeat stocking
-            if interactHeld, SettingsStore.shared.display.holdToRepeatStock, world.carried != nil,
-               let f = focus, case .slot = f,
-               world.time - interactHeldSince > 0.35, world.time - lastRepeat > 0.11 {
+            // Hold the hand button to keep grabbing / placing
+            if interactHeld, SettingsStore.shared.display.holdToRepeat, let f = focus,
+               world.time - interactHeldSince > 0.3, world.time - lastRepeat > 0.12 {
                 lastRepeat = world.time
                 world.interact(f)
             }
+            if world.time - lastSave > 20 {
+                lastSave = world.time
+                world.snapshot()
+            }
         }
-        refreshHUD()
+        hud.setStatus(level: "\(level.title) · \(level.stageName)", time: world.timeString(),
+                      frozen: world.skills.isActive(.freeze, now: world.time),
+                      remaining: world.remaining, progress: world.progress)
+        hud.setPrompt(world.prompt(for: focus))
+        hud.setTip(world.tutorialText)
+        hud.crosshair.isTargeting = focus != nil
+        let mul = world.skillMultiplier
+        for (id, b) in hud.skillButtons {
+            b.cooldown = CGFloat(world.skills.cooldownFraction(id, now: world.time, multiplier: mul))
+            b.active = world.skills.isActive(id, now: world.time)
+            let rem = world.skills.remaining(id, now: world.time)
+            b.countdown.text = rem > 0 ? "\(Int(ceil(rem)))" : nil
+            b.icon.alpha = rem > 0 ? 0.35 : 1
+        }
 
         fpsFrames += 1
         fpsTime += dt
@@ -175,31 +188,10 @@ final class GameViewController: UIViewController {
         return world.target(for: hit.node, hitPoint: hit.simdWorldCoordinates)
     }
 
-    private func refreshHUD() {
-        let d = SettingsStore.shared.display
-        hud.setStatus(money: formatMoney(world.cash, symbol: d.currencySymbol),
-                      day: "Day \(world.day)/\(level.days)  ·  \(world.queue.count) in line",
-                      rating: world.rating, clock: world.clockString(), phase: world.phase)
-        hud.setPrompt(world.prompt(for: focus))
-        hud.setTip(world.tutorialText)
-        hud.crosshair.isTargeting = focus != nil
-        let mul = world.skillMultiplier
-        for (id, b) in hud.skillButtons {
-            let frac = world.skills.cooldownFraction(id, now: world.time, multiplier: mul)
-            b.cooldown = CGFloat(frac)
-            b.active = world.skills.isActive(id, now: world.time)
-            let rem = world.skills.remaining(id, now: world.time)
-            b.countdown.text = rem > 0 ? "\(Int(ceil(rem)))" : nil
-            b.icon.alpha = rem > 0 ? 0.35 : 1
-        }
-    }
-
     // MARK: Input
 
     private func tapWorld(at p: CGPoint) {
-        guard !overlayOpen else { return }
-        let t = hitTarget(at: p)
-        if t == nil { return }
+        guard !overlayOpen, let t = hitTarget(at: p) else { return }
         world.interact(t)
     }
 
@@ -226,8 +218,7 @@ final class GameViewController: UIViewController {
         host.view.backgroundColor = .clear
         host.modalPresentationStyle = .overFullScreen
         host.modalTransitionStyle = .crossDissolve
-        let presenter = presentedViewController ?? self
-        presenter.present(host, animated: true)
+        present(host, animated: true)
     }
 
     private func closeOverlay(then next: (() -> Void)? = nil) {
@@ -245,20 +236,26 @@ final class GameViewController: UIViewController {
 
     private func openPause() {
         guard !overlayOpen else { return }
+        world.snapshot()
         presentOverlay(PauseView(
-            levelName: level.name, day: world.day, totalDays: level.days,
+            title: "\(level.title) · \(level.stageName)",
+            subtitle: "\(world.remaining) items left · \(world.timeString())",
             onResume: { [weak self] in self?.closeOverlay() },
-            onSettings: { [weak self] in
-                self?.closeOverlay { self?.openSettings() }
-            },
-            onHelp: { [weak self] in
-                self?.closeOverlay { self?.openHelp() }
-            },
-            onRestartDay: { [weak self] in
-                self?.closeOverlay { self?.onRestartDay?() }
+            onSettings: { [weak self] in self?.closeOverlay { self?.openSettings() } },
+            onHelp: { [weak self] in self?.closeOverlay { self?.openHelp() } },
+            onRestart: { [weak self] in
+                self?.closeOverlay {
+                    ProgressStore.shared.clearSave(self?.level.id ?? "")
+                    self?.shutdown()
+                    self?.onRestart?()
+                }
             },
             onQuit: { [weak self] in
-                self?.closeOverlay { self?.quit() }
+                self?.closeOverlay {
+                    self?.world.snapshot()
+                    self?.shutdown()
+                    self?.onExit?()
+                }
             }))
     }
 
@@ -274,45 +271,40 @@ final class GameViewController: UIViewController {
         }))
     }
 
-    private func openComputer(priceFocus: String?) {
-        guard !overlayOpen else { return }
-        let model = ComputerModel(world: world, focusProduct: priceFocus)
-        presentOverlay(ComputerView(model: model, onClose: { [weak self] in self?.closeOverlay() }))
-    }
-
-    private func openChange(_ req: ChangeRequest) {
-        guard !overlayOpen else { return }
-        presentOverlay(ChangeView(request: req, showDue: SettingsStore.shared.game.showChangeDue,
-                           symbol: SettingsStore.shared.display.currencySymbol,
-                           onGive: { [weak self] given in
-                               self?.world.completeSale(given: given)
-                               self?.closeOverlay()
-                           },
-                           onCancel: { [weak self] in self?.closeOverlay() }))
-    }
-
-    private func openSummary(_ s: DaySummary) {
-        if overlayOpen {
-            // Close whatever is open first (e.g. the computer) then show the summary.
-            closeOverlay { [weak self] in self?.overlayOpen = false; self?.openSummary(s) }
-            return
-        }
-        presentOverlay(SummaryView(summary: s, symbol: SettingsStore.shared.display.currencySymbol, onContinue: { [weak self] in
+    private func showComplete(_ r: LevelResult) {
+        // Let the sparkles play for a moment first.
+        interactHeld = false
+        Task { @MainActor [weak self] in
+            try? await Task.sleep(nanoseconds: 1_200_000_000)
             guard let self = self else { return }
-            if self.world.continueAfterSummary() {
-                self.closeOverlay()
+            if self.overlayOpen {
+                self.dismiss(animated: false) { self.overlayOpen = false; self.showCompleteNow(r) }
             } else {
-                self.closeOverlay { self.onExit?() }
+                self.showCompleteNow(r)
             }
-        }))
+        }
     }
 
-    private func quit() {
-        stopLoop()
-        onExit?()
+    private func showCompleteNow(_ r: LevelResult) {
+        do {
+            self.presentOverlay(LevelCompleteView(
+                result: r,
+                onNext: r.next == nil ? nil : { [weak self] in
+                    self?.closeOverlay {
+                        self?.shutdown()
+                        if let n = r.next { self?.onNext?(n) }
+                    }
+                },
+                onReplay: { [weak self] in
+                    self?.closeOverlay { self?.shutdown(); self?.onRestart?() }
+                },
+                onMenu: { [weak self] in
+                    self?.closeOverlay { self?.shutdown(); self?.onExit?() }
+                }))
+        }
     }
 
-    /// Called when SwiftUI removes the game (quit, restart).
+    /// Stops the render loop (also called when SwiftUI removes the game).
     func shutdown() {
         stopLoop()
         world?.paused = true
@@ -323,14 +315,16 @@ final class GameViewController: UIViewController {
 /// SwiftUI wrapper.
 @MainActor
 struct GameContainer: UIViewControllerRepresentable {
-    let level: StoreLevel
+    let level: OrgLevel
     let onExit: () -> Void
-    let onRestartDay: () -> Void
+    let onRestart: () -> Void
+    let onNext: (OrgLevel) -> Void
 
     func makeUIViewController(context: Context) -> GameViewController {
         let vc = GameViewController(level: level)
         vc.onExit = onExit
-        vc.onRestartDay = onRestartDay
+        vc.onRestart = onRestart
+        vc.onNext = onNext
         return vc
     }
 

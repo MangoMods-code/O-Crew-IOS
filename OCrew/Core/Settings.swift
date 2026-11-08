@@ -41,19 +41,6 @@ enum Difficulty: String, Codable, CaseIterable, Identifiable {
     var label: String { rawValue.capitalized }
 }
 
-enum DeliverySpeed: String, Codable, CaseIterable, Identifiable {
-    case instant, fast, normal
-    var id: String { rawValue }
-    var label: String { rawValue.capitalized }
-    var seconds: Double {
-        switch self {
-        case .instant: return 0
-        case .fast: return 4
-        case .normal: return 12
-        }
-    }
-}
-
 enum FrameRateCap: Int, Codable, CaseIterable, Identifiable {
     case fps30 = 30, fps60 = 60, fps120 = 120
     var id: Int { rawValue }
@@ -90,20 +77,21 @@ struct DisplaySettings: Codable, Equatable {
     var hudScale: Double = 1.0
     var hudOpacity: Double = 0.92
     var textScale: Double = 1.0
-    var showClock = true
-    var use24hClock = false
-    var showMoney = true
-    var showRating = true
+    var showTimer = true
+    var showRemaining = true
+    var showProgressBar = true
     var showPrompts = true
     var showSkillLabels = true
-    var showMoneyPopups = true
     var showToasts = true
     var showFPS = false
-    var currencySymbol = "$"
+    var basketBarScale: Double = 1.0
+    var basketCounts = true
     // World labels
-    var showPriceTags = true
-    var showPatienceBars = true
+    var showShelfTags = true
+    var showRowLabels = true
+    var signScale: Double = 1.0
     var highlightFocused = true
+    var sparkles = true
     // Crosshair
     var crosshair: CrosshairStyle = .dot
     var crosshairColor: CrosshairColor = .white
@@ -114,7 +102,7 @@ struct DisplaySettings: Codable, Equatable {
     var joystickSize: Double = 1.0
     var buttonSize: Double = 1.0
     var tapToInteract = true
-    var holdToRepeatStock = true
+    var holdToRepeat = true
     // Camera
     var fieldOfView: Double = 88
     var lookSensitivity: Double = 1.0
@@ -136,36 +124,32 @@ struct DisplaySettings: Codable, Equatable {
 
 struct GameSettings: Codable, Equatable {
     var difficulty: Difficulty = .normal
-    var dayLengthMinutes: Double = 10
-    var customerRate: Double = 1.0
-    var customerPatience: Double = 1.0
-    var priceSensitivity: Double = 1.0
-    var theftRate: Double = 1.0
-    var startingCash: Double = 1.0
-    var rentMultiplier: Double = 1.0
+    var basketCapacity: Double = 10
+    var messSize: Double = 1.0
+    var placementFeedback = true
+    var autoMatch = true
+    var keepTogether = true
+    var misplacedItems = true
+    var expiredItems = true
+    var tippedItems = true
     var skillCooldown: Double = 1.0
     var walkSpeed: Double = 1.0
-    var delivery: DeliverySpeed = .fast
-    var manualChange = true
-    var showChangeDue = true
-    var cashCustomerShare: Double = 0.45
-    var autoDiscardEmptyBoxes = true
-    var finishShoppersAtClose = true
+    var parTimeScale: Double = 1.0
+    var pickupReach: Double = 2.6
     var showTutorial = true
-    var outOfStockPenalty = true
 
     mutating func apply(_ preset: Difficulty) {
         difficulty = preset
         switch preset {
         case .relaxed:
-            dayLengthMinutes = 14; customerRate = 0.8; customerPatience = 1.6; priceSensitivity = 0.7
-            theftRate = 0.4; startingCash = 1.5; rentMultiplier = 0.6; skillCooldown = 0.7; delivery = .instant
+            basketCapacity = 15; messSize = 0.7; placementFeedback = true; skillCooldown = 0.7
+            walkSpeed = 1.15; parTimeScale = 1.4; pickupReach = 3.0
         case .normal:
-            dayLengthMinutes = 10; customerRate = 1.0; customerPatience = 1.0; priceSensitivity = 1.0
-            theftRate = 1.0; startingCash = 1.0; rentMultiplier = 1.0; skillCooldown = 1.0; delivery = .fast
+            basketCapacity = 10; messSize = 1.0; placementFeedback = true; skillCooldown = 1.0
+            walkSpeed = 1.0; parTimeScale = 1.0; pickupReach = 2.6
         case .hard:
-            dayLengthMinutes = 8; customerRate = 1.3; customerPatience = 0.7; priceSensitivity = 1.4
-            theftRate = 1.8; startingCash = 0.8; rentMultiplier = 1.3; skillCooldown = 1.3; delivery = .normal
+            basketCapacity = 8; messSize = 1.25; placementFeedback = false; skillCooldown = 1.3
+            walkSpeed = 1.0; parTimeScale = 0.8; pickupReach = 2.3
         case .custom:
             break
         }
@@ -181,8 +165,8 @@ final class SettingsStore: ObservableObject {
     @Published var display: DisplaySettings { didSet { save(display, key: Self.displayKey) } }
     @Published var game: GameSettings { didSet { save(game, key: Self.gameKey) } }
 
-    private static let displayKey = "ocrew.display.v1"
-    private static let gameKey = "ocrew.game.v1"
+    private static let displayKey = "ocrew.display.v2"
+    private static let gameKey = "ocrew.game.v2"
 
     private init() {
         display = Self.load(DisplaySettings.self, key: Self.displayKey, defaults: DisplaySettings())

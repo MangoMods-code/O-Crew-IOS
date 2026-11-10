@@ -1,0 +1,487 @@
+Command line invocation:
+    /Applications/Xcode_26.6.app/Contents/Developer/usr/bin/xcodebuild -project OCrew.xcodeproj -target OCrew -configuration Release -sdk iphonesimulator SYMROOT=/Users/runner/work/O-Crew-IOS/O-Crew-IOS/build ARCHS=arm64 ONLY_ACTIVE_ARCH=NO CODE_SIGNING_ALLOWED=NO build
+
+Build settings from command line:
+    ARCHS = arm64
+    CODE_SIGNING_ALLOWED = NO
+    ONLY_ACTIVE_ARCH = NO
+    SDKROOT = iphonesimulator26.5
+    SYMROOT = /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build
+
+ComputePackagePrebuildTargetDependencyGraph
+
+Prepare packages
+
+CreateBuildRequest
+
+SendProjectDescription
+
+CreateBuildOperation
+
+ComputeTargetDependencyGraph
+note: Building targets in dependency order
+note: Target dependency graph (1 target)
+    Target 'OCrew' in project 'OCrew' (no dependencies)
+
+GatherProvisioningInputs
+
+CreateBuildDescription
+
+ExecuteExternalTool /Applications/Xcode_26.6.app/Contents/Developer/usr/bin/actool --print-asset-tag-combinations --output-format xml1 /Users/runner/work/O-Crew-IOS/O-Crew-IOS/OCrew/Resources/Assets.xcassets
+
+ExecuteExternalTool /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -v -E -dM -isysroot /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -x c -c /dev/null
+
+ExecuteExternalTool /Applications/Xcode_26.6.app/Contents/Developer/usr/bin/actool --version --output-format xml1
+
+ExecuteExternalTool /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc --version
+
+ExecuteExternalTool /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/ld -version_details
+
+Build description signature: c3acd45f0d6a8825d0c8b106dd69b893
+Build description path: /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/XCBuildData/c3acd45f0d6a8825d0c8b106dd69b893.xcbuilddata
+CreateBuildDirectory /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build
+    cd /Users/runner/work/O-Crew-IOS/O-Crew-IOS/OCrew.xcodeproj
+    builtin-create-build-directory /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build
+
+ClangStatCache /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang-stat-cache /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk /var/folders/h5/t85nd63d71x27_8gl5gw3l_w0000gn/C/com.apple.DeveloperTools/26.6-17F113/Xcode/SDKStatCaches.noindex/iphonesimulator26.5-23F81a-688ef53f1462e2c8f657fdc38a81448ff45c64a1807a658693f2a61704f17a36.sdkstatcache
+    cd /Users/runner/work/O-Crew-IOS/O-Crew-IOS/OCrew.xcodeproj
+    /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang-stat-cache /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -o /var/folders/h5/t85nd63d71x27_8gl5gw3l_w0000gn/C/com.apple.DeveloperTools/26.6-17F113/Xcode/SDKStatCaches.noindex/iphonesimulator26.5-23F81a-688ef53f1462e2c8f657fdc38a81448ff45c64a1807a658693f2a61704f17a36.sdkstatcache
+
+WriteAuxiliaryFile /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew-5c276df44b3690535d2ce0917de6cc8b-VFS-iphonesimulator/all-product-headers.yaml
+    cd /Users/runner/work/O-Crew-IOS/O-Crew-IOS/OCrew.xcodeproj
+    write-file /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew-5c276df44b3690535d2ce0917de6cc8b-VFS-iphonesimulator/all-product-headers.yaml
+
+CreateBuildDirectory /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules
+    cd /Users/runner/work/O-Crew-IOS/O-Crew-IOS/OCrew.xcodeproj
+    builtin-create-build-directory /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules
+
+CreateBuildDirectory /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/Release-iphonesimulator
+    cd /Users/runner/work/O-Crew-IOS/O-Crew-IOS/OCrew.xcodeproj
+    builtin-create-build-directory /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/Release-iphonesimulator
+
+CreateBuildDirectory /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/ExplicitPrecompiledModules
+    cd /Users/runner/work/O-Crew-IOS/O-Crew-IOS/OCrew.xcodeproj
+    builtin-create-build-directory /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/ExplicitPrecompiledModules
+
+CreateBuildDirectory /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/EagerLinkingTBDs/Release-iphonesimulator
+    cd /Users/runner/work/O-Crew-IOS/O-Crew-IOS/OCrew.xcodeproj
+    builtin-create-build-directory /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/EagerLinkingTBDs/Release-iphonesimulator
+
+WriteAuxiliaryFile /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/Objects-normal/arm64/OCrew_const_extract_protocols.json (in target 'OCrew' from project 'OCrew')
+    cd /Users/runner/work/O-Crew-IOS/O-Crew-IOS
+    write-file /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/Objects-normal/arm64/OCrew_const_extract_protocols.json
+
+WriteAuxiliaryFile /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/Objects-normal/arm64/OCrew.SwiftFileList (in target 'OCrew' from project 'OCrew')
+    cd /Users/runner/work/O-Crew-IOS/O-Crew-IOS
+    write-file /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/Objects-normal/arm64/OCrew.SwiftFileList
+
+WriteAuxiliaryFile /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/Objects-normal/arm64/OCrew.SwiftConstValuesFileList (in target 'OCrew' from project 'OCrew')
+    cd /Users/runner/work/O-Crew-IOS/O-Crew-IOS
+    write-file /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/Objects-normal/arm64/OCrew.SwiftConstValuesFileList
+
+WriteAuxiliaryFile /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/Objects-normal/arm64/OCrew.LinkFileList (in target 'OCrew' from project 'OCrew')
+    cd /Users/runner/work/O-Crew-IOS/O-Crew-IOS
+    write-file /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/Objects-normal/arm64/OCrew.LinkFileList
+
+WriteAuxiliaryFile /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/Objects-normal/arm64/OCrew-OutputFileMap.json (in target 'OCrew' from project 'OCrew')
+    cd /Users/runner/work/O-Crew-IOS/O-Crew-IOS
+    write-file /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/Objects-normal/arm64/OCrew-OutputFileMap.json
+
+WriteAuxiliaryFile /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/OCrew.hmap (in target 'OCrew' from project 'OCrew')
+    cd /Users/runner/work/O-Crew-IOS/O-Crew-IOS
+    write-file /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/OCrew.hmap
+
+WriteAuxiliaryFile /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/OCrew.DependencyStaticMetadataFileList (in target 'OCrew' from project 'OCrew')
+    cd /Users/runner/work/O-Crew-IOS/O-Crew-IOS
+    write-file /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/OCrew.DependencyStaticMetadataFileList
+
+WriteAuxiliaryFile /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/OCrew.DependencyMetadataFileList (in target 'OCrew' from project 'OCrew')
+    cd /Users/runner/work/O-Crew-IOS/O-Crew-IOS
+    write-file /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/OCrew.DependencyMetadataFileList
+
+WriteAuxiliaryFile /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/OCrew-project-headers.hmap (in target 'OCrew' from project 'OCrew')
+    cd /Users/runner/work/O-Crew-IOS/O-Crew-IOS
+    write-file /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/OCrew-project-headers.hmap
+
+WriteAuxiliaryFile /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/OCrew-own-target-headers.hmap (in target 'OCrew' from project 'OCrew')
+    cd /Users/runner/work/O-Crew-IOS/O-Crew-IOS
+    write-file /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/OCrew-own-target-headers.hmap
+
+WriteAuxiliaryFile /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/OCrew-generated-files.hmap (in target 'OCrew' from project 'OCrew')
+    cd /Users/runner/work/O-Crew-IOS/O-Crew-IOS
+    write-file /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/OCrew-generated-files.hmap
+
+WriteAuxiliaryFile /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/OCrew-all-target-headers.hmap (in target 'OCrew' from project 'OCrew')
+    cd /Users/runner/work/O-Crew-IOS/O-Crew-IOS
+    write-file /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/OCrew-all-target-headers.hmap
+
+WriteAuxiliaryFile /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/OCrew-all-non-framework-target-headers.hmap (in target 'OCrew' from project 'OCrew')
+    cd /Users/runner/work/O-Crew-IOS/O-Crew-IOS
+    write-file /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/OCrew-all-non-framework-target-headers.hmap
+
+MkDir /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/Release-iphonesimulator/OCrew.app (in target 'OCrew' from project 'OCrew')
+    cd /Users/runner/work/O-Crew-IOS/O-Crew-IOS
+    /bin/mkdir -p /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/Release-iphonesimulator/OCrew.app
+
+MkDir /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/assetcatalog_output/unthinned (in target 'OCrew' from project 'OCrew')
+    cd /Users/runner/work/O-Crew-IOS/O-Crew-IOS
+    /bin/mkdir -p /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/assetcatalog_output/unthinned
+
+MkDir /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/assetcatalog_output/thinned (in target 'OCrew' from project 'OCrew')
+    cd /Users/runner/work/O-Crew-IOS/O-Crew-IOS
+    /bin/mkdir -p /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/assetcatalog_output/thinned
+
+GenerateAssetSymbols /Users/runner/work/O-Crew-IOS/O-Crew-IOS/OCrew/Resources/Assets.xcassets (in target 'OCrew' from project 'OCrew')
+    cd /Users/runner/work/O-Crew-IOS/O-Crew-IOS
+    /Applications/Xcode_26.6.app/Contents/Developer/usr/bin/actool /Users/runner/work/O-Crew-IOS/O-Crew-IOS/OCrew/Resources/Assets.xcassets --compile /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/Release-iphonesimulator/OCrew.app --output-format human-readable-text --notices --warnings --export-dependency-info /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/assetcatalog_dependencies --output-partial-info-plist /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/assetcatalog_generated_info.plist --app-icon AppIcon --compress-pngs --enable-on-demand-resources YES --development-region en --target-device iphone --target-device ipad --minimum-deployment-target 17.0 --platform iphonesimulator --bundle-identifier com.mangomods.ocrew --generate-swift-asset-symbol-extensions NO --generate-swift-asset-symbols /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/DerivedSources/GeneratedAssetSymbols.swift --generate-objc-asset-symbols /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/DerivedSources/GeneratedAssetSymbols.h --generate-asset-symbol-index /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/DerivedSources/GeneratedAssetSymbols-Index.plist
+/* com.apple.actool.compilation-results */
+/Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/DerivedSources/GeneratedAssetSymbols-Index.plist
+/Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/DerivedSources/GeneratedAssetSymbols.h
+/Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/DerivedSources/GeneratedAssetSymbols.swift
+
+
+CpResource /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/Release-iphonesimulator/OCrew.app/whoosh.wav /Users/runner/work/O-Crew-IOS/O-Crew-IOS/OCrew/Resources/Sounds/whoosh.wav (in target 'OCrew' from project 'OCrew')
+    cd /Users/runner/work/O-Crew-IOS/O-Crew-IOS
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks /Users/runner/work/O-Crew-IOS/O-Crew-IOS/OCrew/Resources/Sounds/whoosh.wav /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/Release-iphonesimulator/OCrew.app
+
+CpResource /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/Release-iphonesimulator/OCrew.app/toss.wav /Users/runner/work/O-Crew-IOS/O-Crew-IOS/OCrew/Resources/Sounds/toss.wav (in target 'OCrew' from project 'OCrew')
+    cd /Users/runner/work/O-Crew-IOS/O-Crew-IOS
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks /Users/runner/work/O-Crew-IOS/O-Crew-IOS/OCrew/Resources/Sounds/toss.wav /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/Release-iphonesimulator/OCrew.app
+
+CpResource /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/Release-iphonesimulator/OCrew.app/step.wav /Users/runner/work/O-Crew-IOS/O-Crew-IOS/OCrew/Resources/Sounds/step.wav (in target 'OCrew' from project 'OCrew')
+    cd /Users/runner/work/O-Crew-IOS/O-Crew-IOS
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks /Users/runner/work/O-Crew-IOS/O-Crew-IOS/OCrew/Resources/Sounds/step.wav /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/Release-iphonesimulator/OCrew.app
+
+CpResource /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/Release-iphonesimulator/OCrew.app/star.wav /Users/runner/work/O-Crew-IOS/O-Crew-IOS/OCrew/Resources/Sounds/star.wav (in target 'OCrew' from project 'OCrew')
+    cd /Users/runner/work/O-Crew-IOS/O-Crew-IOS
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks /Users/runner/work/O-Crew-IOS/O-Crew-IOS/OCrew/Resources/Sounds/star.wav /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/Release-iphonesimulator/OCrew.app
+
+CpResource /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/Release-iphonesimulator/OCrew.app/skill.wav /Users/runner/work/O-Crew-IOS/O-Crew-IOS/OCrew/Resources/Sounds/skill.wav (in target 'OCrew' from project 'OCrew')
+    cd /Users/runner/work/O-Crew-IOS/O-Crew-IOS
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks /Users/runner/work/O-Crew-IOS/O-Crew-IOS/OCrew/Resources/Sounds/skill.wav /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/Release-iphonesimulator/OCrew.app
+
+CpResource /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/Release-iphonesimulator/OCrew.app/section.wav /Users/runner/work/O-Crew-IOS/O-Crew-IOS/OCrew/Resources/Sounds/section.wav (in target 'OCrew' from project 'OCrew')
+    cd /Users/runner/work/O-Crew-IOS/O-Crew-IOS
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks /Users/runner/work/O-Crew-IOS/O-Crew-IOS/OCrew/Resources/Sounds/section.wav /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/Release-iphonesimulator/OCrew.app
+
+CpResource /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/Release-iphonesimulator/OCrew.app/pop.wav /Users/runner/work/O-Crew-IOS/O-Crew-IOS/OCrew/Resources/Sounds/pop.wav (in target 'OCrew' from project 'OCrew')
+    cd /Users/runner/work/O-Crew-IOS/O-Crew-IOS
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks /Users/runner/work/O-Crew-IOS/O-Crew-IOS/OCrew/Resources/Sounds/pop.wav /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/Release-iphonesimulator/OCrew.app
+
+CpResource /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/Release-iphonesimulator/OCrew.app/place.wav /Users/runner/work/O-Crew-IOS/O-Crew-IOS/OCrew/Resources/Sounds/place.wav (in target 'OCrew' from project 'OCrew')
+    cd /Users/runner/work/O-Crew-IOS/O-Crew-IOS
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks /Users/runner/work/O-Crew-IOS/O-Crew-IOS/OCrew/Resources/Sounds/place.wav /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/Release-iphonesimulator/OCrew.app
+
+CpResource /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/Release-iphonesimulator/OCrew.app/pickup.wav /Users/runner/work/O-Crew-IOS/O-Crew-IOS/OCrew/Resources/Sounds/pickup.wav (in target 'OCrew' from project 'OCrew')
+    cd /Users/runner/work/O-Crew-IOS/O-Crew-IOS
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks /Users/runner/work/O-Crew-IOS/O-Crew-IOS/OCrew/Resources/Sounds/pickup.wav /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/Release-iphonesimulator/OCrew.app
+
+CpResource /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/Release-iphonesimulator/OCrew.app/music.m4a /Users/runner/work/O-Crew-IOS/O-Crew-IOS/OCrew/Resources/Sounds/music.m4a (in target 'OCrew' from project 'OCrew')
+    cd /Users/runner/work/O-Crew-IOS/O-Crew-IOS
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks /Users/runner/work/O-Crew-IOS/O-Crew-IOS/OCrew/Resources/Sounds/music.m4a /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/Release-iphonesimulator/OCrew.app
+
+CpResource /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/Release-iphonesimulator/OCrew.app/magnet.wav /Users/runner/work/O-Crew-IOS/O-Crew-IOS/OCrew/Resources/Sounds/magnet.wav (in target 'OCrew' from project 'OCrew')
+    cd /Users/runner/work/O-Crew-IOS/O-Crew-IOS
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks /Users/runner/work/O-Crew-IOS/O-Crew-IOS/OCrew/Resources/Sounds/magnet.wav /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/Release-iphonesimulator/OCrew.app
+
+CpResource /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/Release-iphonesimulator/OCrew.app/fanfare.wav /Users/runner/work/O-Crew-IOS/O-Crew-IOS/OCrew/Resources/Sounds/fanfare.wav (in target 'OCrew' from project 'OCrew')
+    cd /Users/runner/work/O-Crew-IOS/O-Crew-IOS
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks /Users/runner/work/O-Crew-IOS/O-Crew-IOS/OCrew/Resources/Sounds/fanfare.wav /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/Release-iphonesimulator/OCrew.app
+
+CpResource /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/Release-iphonesimulator/OCrew.app/error.wav /Users/runner/work/O-Crew-IOS/O-Crew-IOS/OCrew/Resources/Sounds/error.wav (in target 'OCrew' from project 'OCrew')
+    cd /Users/runner/work/O-Crew-IOS/O-Crew-IOS
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks /Users/runner/work/O-Crew-IOS/O-Crew-IOS/OCrew/Resources/Sounds/error.wav /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/Release-iphonesimulator/OCrew.app
+
+CpResource /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/Release-iphonesimulator/OCrew.app/ding.wav /Users/runner/work/O-Crew-IOS/O-Crew-IOS/OCrew/Resources/Sounds/ding.wav (in target 'OCrew' from project 'OCrew')
+    cd /Users/runner/work/O-Crew-IOS/O-Crew-IOS
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks /Users/runner/work/O-Crew-IOS/O-Crew-IOS/OCrew/Resources/Sounds/ding.wav /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/Release-iphonesimulator/OCrew.app
+
+CpResource /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/Release-iphonesimulator/OCrew.app/complete.wav /Users/runner/work/O-Crew-IOS/O-Crew-IOS/OCrew/Resources/Sounds/complete.wav (in target 'OCrew' from project 'OCrew')
+    cd /Users/runner/work/O-Crew-IOS/O-Crew-IOS
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks /Users/runner/work/O-Crew-IOS/O-Crew-IOS/OCrew/Resources/Sounds/complete.wav /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/Release-iphonesimulator/OCrew.app
+
+CpResource /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/Release-iphonesimulator/OCrew.app/combo8.wav /Users/runner/work/O-Crew-IOS/O-Crew-IOS/OCrew/Resources/Sounds/combo8.wav (in target 'OCrew' from project 'OCrew')
+    cd /Users/runner/work/O-Crew-IOS/O-Crew-IOS
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks /Users/runner/work/O-Crew-IOS/O-Crew-IOS/OCrew/Resources/Sounds/combo8.wav /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/Release-iphonesimulator/OCrew.app
+
+CpResource /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/Release-iphonesimulator/OCrew.app/combo7.wav /Users/runner/work/O-Crew-IOS/O-Crew-IOS/OCrew/Resources/Sounds/combo7.wav (in target 'OCrew' from project 'OCrew')
+    cd /Users/runner/work/O-Crew-IOS/O-Crew-IOS
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks /Users/runner/work/O-Crew-IOS/O-Crew-IOS/OCrew/Resources/Sounds/combo7.wav /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/Release-iphonesimulator/OCrew.app
+
+CpResource /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/Release-iphonesimulator/OCrew.app/combo6.wav /Users/runner/work/O-Crew-IOS/O-Crew-IOS/OCrew/Resources/Sounds/combo6.wav (in target 'OCrew' from project 'OCrew')
+    cd /Users/runner/work/O-Crew-IOS/O-Crew-IOS
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks /Users/runner/work/O-Crew-IOS/O-Crew-IOS/OCrew/Resources/Sounds/combo6.wav /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/Release-iphonesimulator/OCrew.app
+
+CpResource /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/Release-iphonesimulator/OCrew.app/combo5.wav /Users/runner/work/O-Crew-IOS/O-Crew-IOS/OCrew/Resources/Sounds/combo5.wav (in target 'OCrew' from project 'OCrew')
+    cd /Users/runner/work/O-Crew-IOS/O-Crew-IOS
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks /Users/runner/work/O-Crew-IOS/O-Crew-IOS/OCrew/Resources/Sounds/combo5.wav /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/Release-iphonesimulator/OCrew.app
+
+CpResource /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/Release-iphonesimulator/OCrew.app/combo4.wav /Users/runner/work/O-Crew-IOS/O-Crew-IOS/OCrew/Resources/Sounds/combo4.wav (in target 'OCrew' from project 'OCrew')
+    cd /Users/runner/work/O-Crew-IOS/O-Crew-IOS
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks /Users/runner/work/O-Crew-IOS/O-Crew-IOS/OCrew/Resources/Sounds/combo4.wav /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/Release-iphonesimulator/OCrew.app
+
+CpResource /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/Release-iphonesimulator/OCrew.app/combo3.wav /Users/runner/work/O-Crew-IOS/O-Crew-IOS/OCrew/Resources/Sounds/combo3.wav (in target 'OCrew' from project 'OCrew')
+    cd /Users/runner/work/O-Crew-IOS/O-Crew-IOS
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks /Users/runner/work/O-Crew-IOS/O-Crew-IOS/OCrew/Resources/Sounds/combo3.wav /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/Release-iphonesimulator/OCrew.app
+
+CpResource /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/Release-iphonesimulator/OCrew.app/combo2.wav /Users/runner/work/O-Crew-IOS/O-Crew-IOS/OCrew/Resources/Sounds/combo2.wav (in target 'OCrew' from project 'OCrew')
+    cd /Users/runner/work/O-Crew-IOS/O-Crew-IOS
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks /Users/runner/work/O-Crew-IOS/O-Crew-IOS/OCrew/Resources/Sounds/combo2.wav /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/Release-iphonesimulator/OCrew.app
+
+CpResource /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/Release-iphonesimulator/OCrew.app/combo1.wav /Users/runner/work/O-Crew-IOS/O-Crew-IOS/OCrew/Resources/Sounds/combo1.wav (in target 'OCrew' from project 'OCrew')
+    cd /Users/runner/work/O-Crew-IOS/O-Crew-IOS
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks /Users/runner/work/O-Crew-IOS/O-Crew-IOS/OCrew/Resources/Sounds/combo1.wav /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/Release-iphonesimulator/OCrew.app
+
+CpResource /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/Release-iphonesimulator/OCrew.app/click.wav /Users/runner/work/O-Crew-IOS/O-Crew-IOS/OCrew/Resources/Sounds/click.wav (in target 'OCrew' from project 'OCrew')
+    cd /Users/runner/work/O-Crew-IOS/O-Crew-IOS
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks /Users/runner/work/O-Crew-IOS/O-Crew-IOS/OCrew/Resources/Sounds/click.wav /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/Release-iphonesimulator/OCrew.app
+
+CpResource /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/Release-iphonesimulator/OCrew.app/chime.wav /Users/runner/work/O-Crew-IOS/O-Crew-IOS/OCrew/Resources/Sounds/chime.wav (in target 'OCrew' from project 'OCrew')
+    cd /Users/runner/work/O-Crew-IOS/O-Crew-IOS
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks /Users/runner/work/O-Crew-IOS/O-Crew-IOS/OCrew/Resources/Sounds/chime.wav /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/Release-iphonesimulator/OCrew.app
+
+CpResource /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/Release-iphonesimulator/OCrew.app/bonk.wav /Users/runner/work/O-Crew-IOS/O-Crew-IOS/OCrew/Resources/Sounds/bonk.wav (in target 'OCrew' from project 'OCrew')
+    cd /Users/runner/work/O-Crew-IOS/O-Crew-IOS
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks /Users/runner/work/O-Crew-IOS/O-Crew-IOS/OCrew/Resources/Sounds/bonk.wav /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/Release-iphonesimulator/OCrew.app
+
+CompileAssetCatalogVariant thinned /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/Release-iphonesimulator/OCrew.app /Users/runner/work/O-Crew-IOS/O-Crew-IOS/OCrew/Resources/Assets.xcassets (in target 'OCrew' from project 'OCrew')
+    cd /Users/runner/work/O-Crew-IOS/O-Crew-IOS
+    /Applications/Xcode_26.6.app/Contents/Developer/usr/bin/actool /Users/runner/work/O-Crew-IOS/O-Crew-IOS/OCrew/Resources/Assets.xcassets --compile /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/assetcatalog_output/thinned --output-format human-readable-text --notices --warnings --export-dependency-info /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/assetcatalog_dependencies_thinned --output-partial-info-plist /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/assetcatalog_generated_info.plist_thinned --app-icon AppIcon --compress-pngs --enable-on-demand-resources YES --development-region en --target-device iphone --target-device ipad --minimum-deployment-target 17.0 --platform iphonesimulator
+/* com.apple.actool.compilation-results */
+/Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/assetcatalog_generated_info.plist_thinned
+/Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/assetcatalog_output/thinned/AppIcon60x60@2x.png
+/Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/assetcatalog_output/thinned/AppIcon76x76@2x~ipad.png
+/Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/assetcatalog_output/thinned/Assets.car
+
+
+SwiftDriver OCrew normal arm64 com.apple.xcode.tools.swift.compiler (in target 'OCrew' from project 'OCrew')
+    cd /Users/runner/work/O-Crew-IOS/O-Crew-IOS
+    builtin-SwiftDriver -- /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name OCrew -O -whole-module-optimization @/Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/Objects-normal/arm64/OCrew.SwiftFileList -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -target arm64-apple-ios17.0-simulator -g -Xfrontend -serialize-debugging-options -swift-version 5 -I /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/Release-iphonesimulator -F /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/Release-iphonesimulator -c -num-threads 3 -Xcc -ivfsstatcache -Xcc /var/folders/h5/t85nd63d71x27_8gl5gw3l_w0000gn/C/com.apple.DeveloperTools/26.6-17F113/Xcode/SDKStatCaches.noindex/iphonesimulator26.5-23F81a-688ef53f1462e2c8f657fdc38a81448ff45c64a1807a658693f2a61704f17a36.sdkstatcache -output-file-map /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/Objects-normal/arm64/OCrew-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/Objects-normal/arm64/OCrew.swiftmodule -validate-clang-modules-once -clang-build-session-file /var/folders/h5/t85nd63d71x27_8gl5gw3l_w0000gn/C/org.llvm.clang/ModuleCache.noindex/Session.modulevalidation -Xcc -I/Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/Objects-normal/arm64/OCrew_const_extract_protocols.json -Xcc -iquote -Xcc /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/OCrew-generated-files.hmap -Xcc -I/Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/OCrew-own-target-headers.hmap -Xcc -I/Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/OCrew-all-target-headers.hmap -Xcc -iquote -Xcc /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/OCrew-project-headers.hmap -Xcc -I/Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/Release-iphonesimulator/include -Xcc -I/Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/DerivedSources-normal/arm64 -Xcc -I/Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/DerivedSources/arm64 -Xcc -I/Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/DerivedSources -emit-objc-header -emit-objc-header-path /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/Objects-normal/arm64/OCrew-Swift.h -working-directory /Users/runner/work/O-Crew-IOS/O-Crew-IOS -no-emit-module-separately-wmo
+
+SwiftDriver\ Compilation OCrew normal arm64 com.apple.xcode.tools.swift.compiler (in target 'OCrew' from project 'OCrew')
+    cd /Users/runner/work/O-Crew-IOS/O-Crew-IOS
+    builtin-Swift-Compilation -- /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name OCrew -O -whole-module-optimization @/Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/Objects-normal/arm64/OCrew.SwiftFileList -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -target arm64-apple-ios17.0-simulator -g -Xfrontend -serialize-debugging-options -swift-version 5 -I /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/Release-iphonesimulator -F /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/Release-iphonesimulator -c -num-threads 3 -Xcc -ivfsstatcache -Xcc /var/folders/h5/t85nd63d71x27_8gl5gw3l_w0000gn/C/com.apple.DeveloperTools/26.6-17F113/Xcode/SDKStatCaches.noindex/iphonesimulator26.5-23F81a-688ef53f1462e2c8f657fdc38a81448ff45c64a1807a658693f2a61704f17a36.sdkstatcache -output-file-map /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/Objects-normal/arm64/OCrew-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/Objects-normal/arm64/OCrew.swiftmodule -validate-clang-modules-once -clang-build-session-file /var/folders/h5/t85nd63d71x27_8gl5gw3l_w0000gn/C/org.llvm.clang/ModuleCache.noindex/Session.modulevalidation -Xcc -I/Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/Objects-normal/arm64/OCrew_const_extract_protocols.json -Xcc -iquote -Xcc /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/OCrew-generated-files.hmap -Xcc -I/Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/OCrew-own-target-headers.hmap -Xcc -I/Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/OCrew-all-target-headers.hmap -Xcc -iquote -Xcc /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/OCrew-project-headers.hmap -Xcc -I/Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/Release-iphonesimulator/include -Xcc -I/Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/DerivedSources-normal/arm64 -Xcc -I/Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/DerivedSources/arm64 -Xcc -I/Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/DerivedSources -emit-objc-header -emit-objc-header-path /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/Objects-normal/arm64/OCrew-Swift.h -working-directory /Users/runner/work/O-Crew-IOS/O-Crew-IOS -no-emit-module-separately-wmo
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/_SwiftConcurrencyShims-ALTB5ZCVPMF1Y3ZK5MVG09CLW.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/ptrcheck-DBCSRJRUIP9U4CG12VP5BUXSO.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/_Builtin_stdarg-4UPRBBUKUHMJ6V3YIHGPV658E.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/_Builtin_stddef-1EYE8A64P75HVXDI5UGKQRLHH.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/SwiftShims-U8OQ9VFANYG7VZYO2YJ7AA8Z.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/_AvailabilityInternal-QWFTL0ETH89509DKZN53T11L.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/_Builtin_float-E41AKRPBZ0L3ESDF8SSBJIRI6.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/ptrauth-ESMF4V2ZGYRR5XQMBUSIZL5X4.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/DeveloperToolsSupport-924URKJW1A739M8TBAIWANPBW.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/_Builtin_stdbool-8CB5CWNRIC91YDIR2UN62KADR.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/_DarwinFoundation1-7FBFADCHI0SRPC2D9X97WOUIR.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/_Builtin_limits-ACX2DKTG0Q7AC111IJ2K4TWOU.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/_DarwinFoundation2-6X7ITWXA22P7VYG7O971VY9T9.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/_Builtin_tgmath-9FBWPGCMUKQL15KNWX9FZ3Y50.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/sys_types-3N5E0GQ0X2KRQ2OUN1IPXCFQ0.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/_Builtin_stdint-AXBU30WXWQ6WZLN1ZF06MAPAC.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/_Builtin_intrinsics-94HX5SHC8CXLN3T7FA4D9S5IL.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/_Builtin_stdatomic-761DR8QJD0WTAYSTMNTJQVUDX.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/_DarwinFoundation3-3AT22SOSW70IRVDFDANGOAMD3.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/_Builtin_inttypes-4WJ4A2AYE2FMEOPIDSBIC6HFE.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/Darwin-6OTPGMUQW5BUP81825Q7IG5E2.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/simd-1K5MVK37AY5VTGXYR419IAL30.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/MachO-3DG07FICRTMP6BOU8YKIZGCEU.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/ObjectiveC-59SPGQDRSM1YQ9NGI2IRME6UG.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/Spatial-4AGG2BSZ22DX2N6SRWGXX4AQ.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/os_object-4IT12XO5FYZU9994VLHE6LRKO.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/os_workgroup-E9AVR5Z8XDSCESY53SQDQG6VP.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/Dispatch-855F7WCU0UKGQPKZYBOLWH7X.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/XPC-3HLSZTBMTKTUAPJ2QHW3MWZHZ.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/dnssd-10WCPWYA4OK8921QBO47Q3GWK.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/CoreFoundation-5BPLHDHBF76494OH9YZD4R71O.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/os-97D0PG44FGZL7MT95N0B82DC.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/CoreAudioTypes-E3XB0JXNYWJJ1M7XJC6LHIZX4.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/CoreGraphics-5NXFCFDGH3FQF25437SAA0GYU.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/Security-61RDDPP6GHFN1X7EFMIZ3MUPL.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/CoreAudio-8NBKWHZ52L49QB9Y8F6WBRWUK.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/CoreText-DCPCVPD0MPJ0FBZZWJCWQKI0Z.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/ImageIO-3BVTODSZ2JH1E8M4I9HPSUP5D.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/CFNetwork-3NK8OIJMRKIQL59BWBVIMSXJ4.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/Foundation-4C20QN16VSE3MJOXFNXHLD2ZG.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/Symbols-2F5JDUQ0363YMEOUY9IWT7PAW.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/Network-BDCNE7P21IBIRWGTVDD96GLXE.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/DataDetection-9MQ2X8MVD15701CW51W98HAN2.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/CoreTransferable-CPQHYHLGBUXZ5NIMQ4OD97PUI.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/CoreData-CXEBP0VBY2RIJZ7A6YB8GSF1T.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/OpenGLES-AIBHUGT2SOUYQ95NXUXSW0JCR.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/UniformTypeIdentifiers-EL1XMVHFEO2B8AB9E74MBP0CU.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/IOSurface-4EHLC2OU2DI6QFE58395LSHSP.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/Accessibility-8PR2TYVPF3VW8F0C442JHAEB4.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/FileProvider-1KHEQZ2R9E2VIPFK5PR3399T7.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/UIUtilities-9M2A53E1BXET3MCBHSIHB386N.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/Metal-7FGLNL1RSJ1MGNC2C3CA8ET7Z.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/ModelIO-5XP7WDOEL23CZR1T3GKF8CLKH.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/OSLog-EARNRGVOXBIB0RX2SZHJSJKE7.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/UserNotifications-DZH3Y7TS7ZJEYPHCURZ6TI5MP.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/CoreVideo-BF952KY9VFG6GA1A0U7LANX2H.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/AVRouting-DOC3GCPO4U3VTKOJAN5CRX8R1.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/CoreMIDI-7I6OA7P5N4SENQO5FPPE1XE78.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/CoreMedia-B037I41AKPN1N3GJORCKKRF1D.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/CoreImage-C97AD3TU6PC8A9HUDIA5QY6W0.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/AudioToolbox-BKFLD590R4HXCP8TONOH2X5F4.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/QuartzCore-7WLQU8G08AN9ZY3GI6ZM011TX.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/SwiftUICore-BWQLRQ5ZQJSMC9IXDK6CPV2P8.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/UIKit-4CY7XT1SAJ32C7R22VR6CFZGZ.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/AVFAudio-9GOJ2M8LZ6W8T998SDX3ILFOU.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/MediaToolbox-BFBBYXBJHSVBI997R2E4JBARE.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/AVFoundation-AEAGTXQW178A6MW9834GJV8ZQ.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/GLKit-9O8LY6RK5ZA2F9FOYFO6VQUI3.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/SwiftUI-9BTVLMDCZT3O57RU99MPFQJCY.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/SceneKit-1CJ57AQWPVTTR6FXQA9FEYZ9P.pcm
+
+SwiftCompile normal arm64 Compiling\ Colors.swift,\ Components.swift,\ ControlsView.swift,\ Cosmetics.swift,\ DebugShot.swift,\ Feedback.swift,\ Fixture.swift,\ GameViewController.swift,\ GameWorld+Debug.swift,\ GameWorld+Ray.swift,\ GameWorld+Scene.swift,\ GameWorld+Sort.swift,\ GameWorld.swift,\ HUDView.swift,\ Icons.swift,\ Layout.swift,\ Levels.swift,\ MenuScene.swift,\ MenuViews.swift,\ MeshBatcher.swift,\ MeshBuilder.swift,\ MetalSceneView.swift,\ Models.swift,\ OCrewApp.swift,\ ProductMeshes.swift,\ Products.swift,\ Progress.swift,\ Rig.swift,\ Screens.swift,\ Settings.swift,\ SettingsView.swift,\ Skills.swift,\ GeneratedAssetSymbols.swift /Users/runner/work/O-Crew-IOS/O-Crew-IOS/OCrew/Core/Colors.swift /Users/runner/work/O-Crew-IOS/O-Crew-IOS/OCrew/UI/Components.swift /Users/runner/work/O-Crew-IOS/O-Crew-IOS/OCrew/Game/ControlsView.swift /Users/runner/work/O-Crew-IOS/O-Crew-IOS/OCrew/Core/Cosmetics.swift /Users/runner/work/O-Crew-IOS/O-Crew-IOS/OCrew/Core/DebugShot.swift /Users/runner/work/O-Crew-IOS/O-Crew-IOS/OCrew/Core/Feedback.swift /Users/runner/work/O-Crew-IOS/O-Crew-IOS/OCrew/World/Fixture.swift /Users/runner/work/O-Crew-IOS/O-Crew-IOS/OCrew/Game/GameViewController.swift /Users/runner/work/O-Crew-IOS/O-Crew-IOS/OCrew/World/GameWorld+Debug.swift /Users/runner/work/O-Crew-IOS/O-Crew-IOS/OCrew/World/GameWorld+Ray.swift /Users/runner/work/O-Crew-IOS/O-Crew-IOS/OCrew/World/GameWorld+Scene.swift /Users/runner/work/O-Crew-IOS/O-Crew-IOS/OCrew/World/GameWorld+Sort.swift /Users/runner/work/O-Crew-IOS/O-Crew-IOS/OCrew/World/GameWorld.swift /Users/runner/work/O-Crew-IOS/O-Crew-IOS/OCrew/Game/HUDView.swift /Users/runner/work/O-Crew-IOS/O-Crew-IOS/OCrew/World/Icons.swift /Users/runner/work/O-Crew-IOS/O-Crew-IOS/OCrew/World/Layout.swift /Users/runner/work/O-Crew-IOS/O-Crew-IOS/OCrew/Data/Levels.swift /Users/runner/work/O-Crew-IOS/O-Crew-IOS/OCrew/UI/MenuScene.swift /Users/runner/work/O-Crew-IOS/O-Crew-IOS/OCrew/UI/MenuViews.swift /Users/runner/work/O-Crew-IOS/O-Crew-IOS/OCrew/World/MeshBatcher.swift /Users/runner/work/O-Crew-IOS/O-Crew-IOS/OCrew/World/MeshBuilder.swift /Users/runner/work/O-Crew-IOS/O-Crew-IOS/OCrew/Game/MetalSceneView.swift /Users/runner/work/O-Crew-IOS/O-Crew-IOS/OCrew/World/Models.swift /Users/runner/work/O-Crew-IOS/O-Crew-IOS/OCrew/App/OCrewApp.swift /Users/runner/work/O-Crew-IOS/O-Crew-IOS/OCrew/World/ProductMeshes.swift /Users/runner/work/O-Crew-IOS/O-Crew-IOS/OCrew/Data/Products.swift /Users/runner/work/O-Crew-IOS/O-Crew-IOS/OCrew/Core/Progress.swift /Users/runner/work/O-Crew-IOS/O-Crew-IOS/OCrew/World/Rig.swift /Users/runner/work/O-Crew-IOS/O-Crew-IOS/OCrew/UI/Screens.swift /Users/runner/work/O-Crew-IOS/O-Crew-IOS/OCrew/Core/Settings.swift /Users/runner/work/O-Crew-IOS/O-Crew-IOS/OCrew/UI/SettingsView.swift /Users/runner/work/O-Crew-IOS/O-Crew-IOS/OCrew/World/Skills.swift /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/DerivedSources/GeneratedAssetSymbols.swift /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphonesimulator/prebuilt-modules/26.5/Observation.swiftmodule/arm64-apple-ios-simulator.swiftmodule /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphonesimulator/prebuilt-modules/26.5/SwiftUI.swiftmodule/arm64-apple-ios-simulator.swiftmodule /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphonesimulator/prebuilt-modules/26.5/CoreMIDI.swiftmodule/arm64-apple-ios-simulator.swiftmodule /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphonesimulator/prebuilt-modules/26.5/ModelIO.swiftmodule/arm64-apple-ios-simulator.swiftmodule /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphonesimulator/prebuilt-modules/26.5/_DarwinFoundation3.swiftmodule/arm64-apple-ios-simulator.swiftmodule /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphonesimulator/prebuilt-modules/26.5/XPC.swiftmodule/arm64-apple-ios-simulator.swiftmodule /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphonesimulator/prebuilt-modules/26.5/Foundation.swiftmodule/arm64-apple-ios-simulator.swiftmodule /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphonesimulator/prebuilt-modules/26.5/DataDetection.swiftmodule/arm64-apple-ios-simulator.swiftmodule /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphonesimulator/prebuilt-modules/26.5/CoreGraphics.swiftmodule/arm64-apple-ios-simulator.swiftmodule /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphonesimulator/prebuilt-modules/26.5/Spatial.swiftmodule/arm64-apple-ios-simulator.swiftmodule /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphonesimulator/prebuilt-modules/26.5/CoreData.swiftmodule/arm64-apple-ios-simulator.swiftmodule /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphonesimulator/prebuilt-modules/26.5/Accessibility.swiftmodule/arm64-apple-ios-simulator.swiftmodule /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphonesimulator/prebuilt-modules/26.5/_StringProcessing.swiftmodule/arm64-apple-ios-simulator.swiftmodule /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphonesimulator/prebuilt-modules/26.5/_DarwinFoundation1.swiftmodule/arm64-apple-ios-simulator.swiftmodule /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphonesimulator/prebuilt-modules/26.5/QuartzCore.swiftmodule/arm64-apple-ios-simulator.swiftmodule /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphonesimulator/prebuilt-modules/26.5/Dispatch.swiftmodule/arm64-apple-ios-simulator.swiftmodule /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphonesimulator/prebuilt-modules/26.5/CoreMedia.swiftmodule/arm64-apple-ios-simulator.swiftmodule /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphonesimulator/prebuilt-modules/26.5/AVFAudio.swiftmodule/arm64-apple-ios-simulator.swiftmodule /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphonesimulator/prebuilt-modules/26.5/Synchronization.swiftmodule/arm64-apple-ios-simulator.swiftmodule /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphonesimulator/prebuilt-modules/26.5/UniformTypeIdentifiers.swiftmodule/arm64-apple-ios-simulator.swiftmodule /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphonesimulator/prebuilt-modules/26.5/simd.swiftmodule/arm64-apple-ios-simulator.swiftmodule /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphonesimulator/prebuilt-modules/26.5/Darwin.swiftmodule/arm64-apple-ios-simulator.swiftmodule /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphonesimulator/prebuilt-modules/26.5/UIKit.swiftmodule/arm64-apple-ios-simulator.swiftmodule /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphonesimulator/prebuilt-modules/26.5/SceneKit.swiftmodule/arm64-apple-ios-simulator.swiftmodule /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphonesimulator/prebuilt-modules/26.5/Combine.swiftmodule/arm64-apple-ios-simulator.swiftmodule /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphonesimulator/prebuilt-modules/26.5/FileProvider.swiftmodule/arm64-apple-ios-simulator.swiftmodule /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphonesimulator/prebuilt-modules/26.5/System.swiftmodule/arm64-apple-ios-simulator.swiftmodule /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphonesimulator/prebuilt-modules/26.5/CoreVideo.swiftmodule/arm64-apple-ios-simulator.swiftmodule /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphonesimulator/prebuilt-modules/26.5/CoreFoundation.swiftmodule/arm64-apple-ios-simulator.swiftmodule /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphonesimulator/prebuilt-modules/26.5/_SceneKit_SwiftUI.swiftmodule/arm64-apple-ios-simulator.swiftmodule /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphonesimulator/prebuilt-modules/26.5/CoreImage.swiftmodule/arm64-apple-ios-simulator.swiftmodule /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphonesimulator/prebuilt-modules/26.5/_Builtin_float.swiftmodule/arm64-apple-ios-simulator.swiftmodule /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphonesimulator/prebuilt-modules/26.5/Symbols.swiftmodule/arm64-apple-ios-simulator.swiftmodule /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphonesimulator/prebuilt-modules/26.5/DeveloperToolsSupport.swiftmodule/arm64-apple-ios-simulator.swiftmodule /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphonesimulator/prebuilt-modules/26.5/Metal.swiftmodule/arm64-apple-ios-simulator.swiftmodule /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphonesimulator/prebuilt-modules/26.5/AudioToolbox.swiftmodule/arm64-apple-ios-simulator.swiftmodule /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphonesimulator/prebuilt-modules/26.5/CoreAudio.swiftmodule/arm64-apple-ios-simulator.swiftmodule /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphonesimulator/prebuilt-modules/26.5/CoreText.swiftmodule/arm64-apple-ios-simulator.swiftmodule /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphonesimulator/prebuilt-modules/26.5/_DarwinFoundation2.swiftmodule/arm64-apple-ios-simulator.swiftmodule /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphonesimulator/prebuilt-modules/26.5/ObjectiveC.swiftmodule/arm64-apple-ios-simulator.swiftmodule /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphonesimulator/prebuilt-modules/26.5/_Concurrency.swiftmodule/arm64-apple-ios-simulator.swiftmodule /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphonesimulator/prebuilt-modules/26.5/SwiftUICore.swiftmodule/arm64-apple-ios-simulator.swiftmodule /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphonesimulator/prebuilt-modules/26.5/OSLog.swiftmodule/arm64-apple-ios-simulator.swiftmodule /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphonesimulator/prebuilt-modules/26.5/CoreTransferable.swiftmodule/arm64-apple-ios-simulator.swiftmodule /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphonesimulator/prebuilt-modules/26.5/Swift.swiftmodule/arm64-apple-ios-simulator.swiftmodule /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphonesimulator/prebuilt-modules/26.5/AVFoundation.swiftmodule/arm64-apple-ios-simulator.swiftmodule /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphonesimulator/prebuilt-modules/26.5/os.swiftmodule/arm64-apple-ios-simulator.swiftmodule /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphonesimulator/prebuilt-modules/26.5/GLKit.swiftmodule/arm64-apple-ios-simulator.swiftmodule /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/UIUtilities-9M2A53E1BXET3MCBHSIHB386N.pcm /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/_AvailabilityInternal-QWFTL0ETH89509DKZN53T11L.pcm /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/CoreVideo-BF952KY9VFG6GA1A0U7LANX2H.pcm /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/_Builtin_stdatomic-761DR8QJD0WTAYSTMNTJQVUDX.pcm /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/Symbols-2F5JDUQ0363YMEOUY9IWT7PAW.pcm /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/UserNotifications-DZH3Y7TS7ZJEYPHCURZ6TI5MP.pcm /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/sys_types-3N5E0GQ0X2KRQ2OUN1IPXCFQ0.pcm /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/os_object-4IT12XO5FYZU9994VLHE6LRKO.pcm /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/Spatial-4AGG2BSZ22DX2N6SRWGXX4AQ.pcm /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/Network-BDCNE7P21IBIRWGTVDD96GLXE.pcm /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/dnssd-10WCPWYA4OK8921QBO47Q3GWK.pcm /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/UniformTypeIdentifiers-EL1XMVHFEO2B8AB9E74MBP0CU.pcm /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/UIKit-4CY7XT1SAJ32C7R22VR6CFZGZ.pcm /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/os-97D0PG44FGZL7MT95N0B82DC.pcm /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/simd-1K5MVK37AY5VTGXYR419IAL30.pcm /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/_Builtin_stdint-AXBU30WXWQ6WZLN1ZF06MAPAC.pcm /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/SwiftUICore-BWQLRQ5ZQJSMC9IXDK6CPV2P8.pcm /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/SwiftShims-U8OQ9VFANYG7VZYO2YJ7AA8Z.pcm /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/_Builtin_tgmath-9FBWPGCMUKQL15KNWX9FZ3Y50.pcm /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/ModelIO-5XP7WDOEL23CZR1T3GKF8CLKH.pcm /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/CoreText-DCPCVPD0MPJ0FBZZWJCWQKI0Z.pcm /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/GLKit-9O8LY6RK5ZA2F9FOYFO6VQUI3.pcm /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/AVRouting-DOC3GCPO4U3VTKOJAN5CRX8R1.pcm /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/IOSurface-4EHLC2OU2DI6QFE58395LSHSP.pcm /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/SwiftUI-9BTVLMDCZT3O57RU99MPFQJCY.pcm /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/CoreGraphics-5NXFCFDGH3FQF25437SAA0GYU.pcm /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/FileProvider-1KHEQZ2R9E2VIPFK5PR3399T7.pcm /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/DeveloperToolsSupport-924URKJW1A739M8TBAIWANPBW.pcm /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/MediaToolbox-BFBBYXBJHSVBI997R2E4JBARE.pcm /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/_DarwinFoundation3-3AT22SOSW70IRVDFDANGOAMD3.pcm /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/Security-61RDDPP6GHFN1X7EFMIZ3MUPL.pcm /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/AudioToolbox-BKFLD590R4HXCP8TONOH2X5F4.pcm /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/XPC-3HLSZTBMTKTUAPJ2QHW3MWZHZ.pcm /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/CFNetwork-3NK8OIJMRKIQL59BWBVIMSXJ4.pcm /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/Accessibility-8PR2TYVPF3VW8F0C442JHAEB4.pcm /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/_DarwinFoundation1-7FBFADCHI0SRPC2D9X97WOUIR.pcm /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/OSLog-EARNRGVOXBIB0RX2SZHJSJKE7.pcm /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/DataDetection-9MQ2X8MVD15701CW51W98HAN2.pcm /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/CoreData-CXEBP0VBY2RIJZ7A6YB8GSF1T.pcm /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/ptrauth-ESMF4V2ZGYRR5XQMBUSIZL5X4.pcm /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/ImageIO-3BVTODSZ2JH1E8M4I9HPSUP5D.pcm /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/Darwin-6OTPGMUQW5BUP81825Q7IG5E2.pcm /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/_Builtin_float-E41AKRPBZ0L3ESDF8SSBJIRI6.pcm /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/_DarwinFoundation2-6X7ITWXA22P7VYG7O971VY9T9.pcm /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/Dispatch-855F7WCU0UKGQPKZYBOLWH7X.pcm /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/CoreAudio-8NBKWHZ52L49QB9Y8F6WBRWUK.pcm /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/SceneKit-1CJ57AQWPVTTR6FXQA9FEYZ9P.pcm /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/QuartzCore-7WLQU8G08AN9ZY3GI6ZM011TX.pcm /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/_Builtin_limits-ACX2DKTG0Q7AC111IJ2K4TWOU.pcm /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/_Builtin_intrinsics-94HX5SHC8CXLN3T7FA4D9S5IL.pcm /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/AVFoundation-AEAGTXQW178A6MW9834GJV8ZQ.pcm /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/CoreFoundation-5BPLHDHBF76494OH9YZD4R71O.pcm /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/MachO-3DG07FICRTMP6BOU8YKIZGCEU.pcm /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/Metal-7FGLNL1RSJ1MGNC2C3CA8ET7Z.pcm /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/OpenGLES-AIBHUGT2SOUYQ95NXUXSW0JCR.pcm /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/AVFAudio-9GOJ2M8LZ6W8T998SDX3ILFOU.pcm /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/CoreImage-C97AD3TU6PC8A9HUDIA5QY6W0.pcm /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/CoreMIDI-7I6OA7P5N4SENQO5FPPE1XE78.pcm /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/_SwiftConcurrencyShims-ALTB5ZCVPMF1Y3ZK5MVG09CLW.pcm /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/Foundation-4C20QN16VSE3MJOXFNXHLD2ZG.pcm /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/CoreAudioTypes-E3XB0JXNYWJJ1M7XJC6LHIZX4.pcm /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/CoreMedia-B037I41AKPN1N3GJORCKKRF1D.pcm /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/_Builtin_stdbool-8CB5CWNRIC91YDIR2UN62KADR.pcm /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/ObjectiveC-59SPGQDRSM1YQ9NGI2IRME6UG.pcm /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/os_workgroup-E9AVR5Z8XDSCESY53SQDQG6VP.pcm /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/ptrcheck-DBCSRJRUIP9U4CG12VP5BUXSO.pcm /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/CoreTransferable-CPQHYHLGBUXZ5NIMQ4OD97PUI.pcm /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/_Builtin_inttypes-4WJ4A2AYE2FMEOPIDSBIC6HFE.pcm /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/_Builtin_stdarg-4UPRBBUKUHMJ6V3YIHGPV658E.pcm /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules/_Builtin_stddef-1EYE8A64P75HVXDI5UGKQRLHH.pcm /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/Objects-normal/arm64/OCrew-dependencies-1.json (in target 'OCrew' from project 'OCrew')
+
+CompileSwift normal arm64 (in target 'OCrew' from project 'OCrew')
+    cd /Users/runner/work/O-Crew-IOS/O-Crew-IOS
+    
+
+SwiftDriverJobDiscovery normal arm64 Compiling Colors.swift, Components.swift, ControlsView.swift, Cosmetics.swift, DebugShot.swift, Feedback.swift, Fixture.swift, GameViewController.swift, GameWorld+Debug.swift, GameWorld+Ray.swift, GameWorld+Scene.swift, GameWorld+Sort.swift, GameWorld.swift, HUDView.swift, Icons.swift, Layout.swift, Levels.swift, MenuScene.swift, MenuViews.swift, MeshBatcher.swift, MeshBuilder.swift, MetalSceneView.swift, Models.swift, OCrewApp.swift, ProductMeshes.swift, Products.swift, Progress.swift, Rig.swift, Screens.swift, Settings.swift, SettingsView.swift, Skills.swift, GeneratedAssetSymbols.swift (in target 'OCrew' from project 'OCrew')
+
+SwiftDriver\ Compilation\ Requirements OCrew normal arm64 com.apple.xcode.tools.swift.compiler (in target 'OCrew' from project 'OCrew')
+    cd /Users/runner/work/O-Crew-IOS/O-Crew-IOS
+    builtin-Swift-Compilation-Requirements -- /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name OCrew -O -whole-module-optimization @/Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/Objects-normal/arm64/OCrew.SwiftFileList -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -target arm64-apple-ios17.0-simulator -g -Xfrontend -serialize-debugging-options -swift-version 5 -I /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/Release-iphonesimulator -F /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/Release-iphonesimulator -c -num-threads 3 -Xcc -ivfsstatcache -Xcc /var/folders/h5/t85nd63d71x27_8gl5gw3l_w0000gn/C/com.apple.DeveloperTools/26.6-17F113/Xcode/SDKStatCaches.noindex/iphonesimulator26.5-23F81a-688ef53f1462e2c8f657fdc38a81448ff45c64a1807a658693f2a61704f17a36.sdkstatcache -output-file-map /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/Objects-normal/arm64/OCrew-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/SwiftExplicitPrecompiledModules -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/Objects-normal/arm64/OCrew.swiftmodule -validate-clang-modules-once -clang-build-session-file /var/folders/h5/t85nd63d71x27_8gl5gw3l_w0000gn/C/org.llvm.clang/ModuleCache.noindex/Session.modulevalidation -Xcc -I/Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/Objects-normal/arm64/OCrew_const_extract_protocols.json -Xcc -iquote -Xcc /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/OCrew-generated-files.hmap -Xcc -I/Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/OCrew-own-target-headers.hmap -Xcc -I/Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/OCrew-all-target-headers.hmap -Xcc -iquote -Xcc /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/OCrew-project-headers.hmap -Xcc -I/Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/Release-iphonesimulator/include -Xcc -I/Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/DerivedSources-normal/arm64 -Xcc -I/Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/DerivedSources/arm64 -Xcc -I/Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/DerivedSources -emit-objc-header -emit-objc-header-path /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/Objects-normal/arm64/OCrew-Swift.h -working-directory /Users/runner/work/O-Crew-IOS/O-Crew-IOS -no-emit-module-separately-wmo
+
+SwiftMergeGeneratedHeaders /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/DerivedSources/OCrew-Swift.h /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/Objects-normal/arm64/OCrew-Swift.h (in target 'OCrew' from project 'OCrew')
+    cd /Users/runner/work/O-Crew-IOS/O-Crew-IOS
+    builtin-swiftHeaderTool -arch arm64 /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/Objects-normal/arm64/OCrew-Swift.h -o /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/DerivedSources/OCrew-Swift.h
+
+Copy /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/Release-iphonesimulator/OCrew.swiftmodule/arm64-apple-ios-simulator.swiftmodule /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/Objects-normal/arm64/OCrew.swiftmodule (in target 'OCrew' from project 'OCrew')
+    cd /Users/runner/work/O-Crew-IOS/O-Crew-IOS
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/Objects-normal/arm64/OCrew.swiftmodule /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/Release-iphonesimulator/OCrew.swiftmodule/arm64-apple-ios-simulator.swiftmodule
+
+Copy /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/Release-iphonesimulator/OCrew.swiftmodule/arm64-apple-ios-simulator.swiftdoc /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/Objects-normal/arm64/OCrew.swiftdoc (in target 'OCrew' from project 'OCrew')
+    cd /Users/runner/work/O-Crew-IOS/O-Crew-IOS
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/Objects-normal/arm64/OCrew.swiftdoc /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/Release-iphonesimulator/OCrew.swiftmodule/arm64-apple-ios-simulator.swiftdoc
+
+Copy /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/Release-iphonesimulator/OCrew.swiftmodule/arm64-apple-ios-simulator.abi.json /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/Objects-normal/arm64/OCrew.abi.json (in target 'OCrew' from project 'OCrew')
+    cd /Users/runner/work/O-Crew-IOS/O-Crew-IOS
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/Objects-normal/arm64/OCrew.abi.json /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/Release-iphonesimulator/OCrew.swiftmodule/arm64-apple-ios-simulator.abi.json
+
+Copy /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/Release-iphonesimulator/OCrew.swiftmodule/Project/arm64-apple-ios-simulator.swiftsourceinfo /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/Objects-normal/arm64/OCrew.swiftsourceinfo (in target 'OCrew' from project 'OCrew')
+    cd /Users/runner/work/O-Crew-IOS/O-Crew-IOS
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/Objects-normal/arm64/OCrew.swiftsourceinfo /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/Release-iphonesimulator/OCrew.swiftmodule/Project/arm64-apple-ios-simulator.swiftsourceinfo
+
+Ld /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/Release-iphonesimulator/OCrew.app/OCrew normal (in target 'OCrew' from project 'OCrew')
+    cd /Users/runner/work/O-Crew-IOS/O-Crew-IOS
+    /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -Xlinker -reproducible -target arm64-apple-ios17.0-simulator -isysroot /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -Os -L/Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/EagerLinkingTBDs/Release-iphonesimulator -L/Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/Release-iphonesimulator -F/Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/EagerLinkingTBDs/Release-iphonesimulator -F/Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/Release-iphonesimulator -filelist /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/Objects-normal/arm64/OCrew.LinkFileList -Xlinker -rpath -Xlinker /usr/lib/swift -Xlinker -rpath -Xlinker @executable_path/Frameworks -Xlinker -dead_strip -Xlinker -object_path_lto -Xlinker /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/Objects-normal/arm64/OCrew_lto.o -Xlinker -objc_abi_version -Xlinker 2 -Xlinker -dependency_info -Xlinker /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/Objects-normal/arm64/OCrew_dependency_info.dat -fobjc-link-runtime -L/Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphonesimulator -L/usr/lib/swift -Xlinker -add_ast_path -Xlinker /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/Objects-normal/arm64/OCrew.swiftmodule @/Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/Objects-normal/arm64/OCrew-linker-args.resp -o /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/Release-iphonesimulator/OCrew.app/OCrew
+
+LinkAssetCatalog /Users/runner/work/O-Crew-IOS/O-Crew-IOS/OCrew/Resources/Assets.xcassets (in target 'OCrew' from project 'OCrew')
+    cd /Users/runner/work/O-Crew-IOS/O-Crew-IOS
+    builtin-linkAssetCatalog --thinned /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/assetcatalog_output/thinned --thinned-dependencies /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/assetcatalog_dependencies_thinned --thinned-info-plist-content /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/assetcatalog_generated_info.plist_thinned --unthinned /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/assetcatalog_output/unthinned --unthinned-dependencies /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/assetcatalog_dependencies_unthinned --unthinned-info-plist-content /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/assetcatalog_generated_info.plist_unthinned --output /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/Release-iphonesimulator/OCrew.app --plist-output /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/assetcatalog_generated_info.plist
+note: Emplaced /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/Release-iphonesimulator/OCrew.app/AppIcon60x60@2x.png (in target 'OCrew' from project 'OCrew')
+note: Emplaced /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/Release-iphonesimulator/OCrew.app/Assets.car (in target 'OCrew' from project 'OCrew')
+note: Emplaced /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/Release-iphonesimulator/OCrew.app/AppIcon76x76@2x~ipad.png (in target 'OCrew' from project 'OCrew')
+
+ProcessInfoPlistFile /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/Release-iphonesimulator/OCrew.app/Info.plist /Users/runner/work/O-Crew-IOS/O-Crew-IOS/Support/Info.plist (in target 'OCrew' from project 'OCrew')
+    cd /Users/runner/work/O-Crew-IOS/O-Crew-IOS
+    builtin-infoPlistUtility /Users/runner/work/O-Crew-IOS/O-Crew-IOS/Support/Info.plist -producttype com.apple.product-type.application -genpkginfo /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/Release-iphonesimulator/OCrew.app/PkgInfo -expandbuildsettings -format binary -platform iphonesimulator -additionalcontentfile /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/assetcatalog_generated_info.plist -o /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/Release-iphonesimulator/OCrew.app/Info.plist
+
+ExtractAppIntentsMetadata (in target 'OCrew' from project 'OCrew')
+    cd /Users/runner/work/O-Crew-IOS/O-Crew-IOS
+    /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/appintentsmetadataprocessor --toolchain-dir /var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v17.6.109.0.DwKOod/Metal.xctoolchain --module-name OCrew --sdk-root /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk --xcode-version 17F113 --platform-family iOS --deployment-target 17.0 --bundle-identifier com.mangomods.ocrew --output /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/Release-iphonesimulator/OCrew.app --target-triple arm64-apple-ios17.0-simulator --binary-file /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/Release-iphonesimulator/OCrew.app/OCrew --dependency-file /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/Objects-normal/arm64/OCrew_dependency_info.dat --stringsdata-file /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/Objects-normal/arm64/ExtractedAppShortcutsMetadata.stringsdata --source-file-list /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/Objects-normal/arm64/OCrew.SwiftFileList --metadata-file-list /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/OCrew.DependencyMetadataFileList --static-metadata-file-list /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/OCrew.DependencyStaticMetadataFileList --swift-const-vals-list /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/Objects-normal/arm64/OCrew.SwiftConstValuesFileList --compile-time-extraction --deployment-aware-processing --validate-assistant-intents --no-app-shortcuts-localization
+2026-11-10 01:00:18.283 appintentsmetadataprocessor[2164:10366] Starting appintentsmetadataprocessor export
+2026-11-10 01:00:18.295 appintentsmetadataprocessor[2164:10366] warning: Metadata extraction skipped. No AppIntents.framework dependency found.
+
+CopySwiftLibs /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/Release-iphonesimulator/OCrew.app (in target 'OCrew' from project 'OCrew')
+    cd /Users/runner/work/O-Crew-IOS/O-Crew-IOS
+    builtin-swiftStdLibTool --copy --verbose --scan-executable /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/Release-iphonesimulator/OCrew.app/OCrew --scan-folder /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/Release-iphonesimulator/OCrew.app/Frameworks --scan-folder /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/Release-iphonesimulator/OCrew.app/PlugIns --scan-folder /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/Release-iphonesimulator/OCrew.app/SystemExtensions --scan-folder /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/Release-iphonesimulator/OCrew.app/Extensions --platform iphonesimulator --toolchain /var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v17.6.109.0.DwKOod/Metal.xctoolchain --toolchain /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain --destination /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/Release-iphonesimulator/OCrew.app/Frameworks --strip-bitcode --strip-bitcode-tool /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/bitcode_strip --emit-dependency-info /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/SwiftStdLibToolInputDependencies.dep --filter-for-swift-os --back-deploy-swift-span
+Ignoring --strip-bitcode because --sign was not passed
+
+GenerateDSYMFile /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/Release-iphonesimulator/OCrew.app.dSYM /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/Release-iphonesimulator/OCrew.app/OCrew (in target 'OCrew' from project 'OCrew')
+    cd /Users/runner/work/O-Crew-IOS/O-Crew-IOS
+    /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/dsymutil /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/Release-iphonesimulator/OCrew.app/OCrew -o /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/Release-iphonesimulator/OCrew.app.dSYM
+
+AppIntentsSSUTraining (in target 'OCrew' from project 'OCrew')
+    cd /Users/runner/work/O-Crew-IOS/O-Crew-IOS
+    /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/appintentsnltrainingprocessor --infoplist-path /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/Release-iphonesimulator/OCrew.app/Info.plist --temp-dir-path /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/ssu --bundle-id com.mangomods.ocrew --product-path /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/Release-iphonesimulator/OCrew.app --extracted-metadata-path /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/Release-iphonesimulator/OCrew.app/Metadata.appintents --metadata-file-list /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/OCrew.build/Release-iphonesimulator/OCrew.build/OCrew.DependencyMetadataFileList --source-file /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/Release-iphonesimulator/OCrew.app/Info.plist --archive-ssu-assets
+2026-11-10 01:00:18.331 appintentsnltrainingprocessor[2170:10377] Parsing options for appintentsnltrainingprocessor
+2026-11-10 01:00:18.331 appintentsnltrainingprocessor[2170:10377] Starting AppIntents SSU YAML Generation
+2026-11-10 01:00:18.335 appintentsnltrainingprocessor[2170:10377] No AppShortcuts found - Skipping.
+
+RegisterExecutionPolicyException /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/Release-iphonesimulator/OCrew.app (in target 'OCrew' from project 'OCrew')
+    cd /Users/runner/work/O-Crew-IOS/O-Crew-IOS
+    builtin-RegisterExecutionPolicyException /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/Release-iphonesimulator/OCrew.app
+
+Validate /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/Release-iphonesimulator/OCrew.app (in target 'OCrew' from project 'OCrew')
+    cd /Users/runner/work/O-Crew-IOS/O-Crew-IOS
+    builtin-validationUtility /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/Release-iphonesimulator/OCrew.app -shallow-bundle -infoplist-subpath Info.plist
+
+Touch /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/Release-iphonesimulator/OCrew.app (in target 'OCrew' from project 'OCrew')
+    cd /Users/runner/work/O-Crew-IOS/O-Crew-IOS
+    /usr/bin/touch -c /Users/runner/work/O-Crew-IOS/O-Crew-IOS/build/Release-iphonesimulator/OCrew.app
+
+** BUILD SUCCEEDED **
+

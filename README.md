@@ -17,6 +17,8 @@ Every push to `main` builds a fresh unsigned `.ipa` automatically (see `.github/
 - **Signs-only sorting**: aisle signs and shelf-row labels tell you the section. No outlines. Identical items go together, and cold stuff goes in fridges and freezers.
 - **Basket** with limited space. Choose what to place from the basket bar.
 - **Skills with cooldowns**: Sprint, Magnet, Scanner, Auto-Sort, Time Freeze.
+- **Score and combos**: chained correct placements multiply points (up to x5), with bonuses for finished sections, speed and clean runs.
+- **Locker**: glove and basket colors unlocked with stars, plus lifetime stats.
 - **Stars for speed**: a relaxed timer, with no fail state. Progress saves mid-level.
 - **Lots of settings**: HUD size/opacity/text size, every HUD element toggleable, sign size, row labels, crosshair style/color/size, FOV, head bob, camera smoothing, frame rate, left-handed layout, floating or fixed stick, stick/button size, look sensitivity, invert Y, colorblind modes, high-contrast HUD, reduce motion, haptics, plus game rules (difficulty presets, basket capacity, reach, mess size, twists on/off, placement feedback, auto-match, keep-together rule, star time targets, cooldowns, walk speed).
 

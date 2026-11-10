@@ -1,0 +1,6 @@
+menu 25
+start 14 -shot grocery-1 -pose 0
+shelves 10 -shot grocery-1 -pose 1
+basket 10 -shot grocery-1 -pose 2
+hardware 14 -shot hardware-3 -pose 1
+supermarket 14 -shot supermarket-3 -pose 0

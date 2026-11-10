@@ -1,0 +1,74 @@
+name: Screenshots (dev)
+
+# Builds the dev branch for the simulator, stages a few scenes and pushes screenshots to the
+# `ci-screens` branch. Never publishes a release.
+on:
+  push:
+    branches: [dev]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: screens
+  cancel-in-progress: true
+
+jobs:
+  shots:
+    runs-on: macos-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install XcodeGen
+        run: |
+          curl -sSL -o xcodegen.zip https://github.com/yonaskolb/XcodeGen/releases/latest/download/xcodegen.zip
+          unzip -q xcodegen.zip -d xcodegen-dist
+          echo "$PWD/xcodegen-dist/xcodegen/bin" >> "$GITHUB_PATH"
+
+      - name: Generate Xcode project
+        run: xcodegen generate
+
+      - name: Build for simulator
+        run: |
+          set -o pipefail
+          xcodebuild -project OCrew.xcodeproj -target OCrew -configuration Release -sdk iphonesimulator \
+            SYMROOT="$PWD/build" ARCHS=arm64 ONLY_ACTIVE_ARCH=NO CODE_SIGNING_ALLOWED=NO \
+            build 2>&1 | tee build.log | grep -E "error:|BUILD (SUCCEEDED|FAILED)" || true
+          if ! grep -q "BUILD SUCCEEDED" build.log; then
+            echo "::group::Errors"; grep -E "error:" build.log | sort -u | head -150; echo "::endgroup::"
+            exit 1
+          fi
+
+      - name: Take screenshots
+        run: |
+          APP="$PWD/build/Release-iphonesimulator/OCrew.app"
+          UDID=$(xcrun simctl list devices available | grep -E "iPhone .*Pro Max" | head -1 | grep -oE "[0-9A-F-]{36}")
+          echo "Simulator: $UDID"
+          xcrun simctl boot "$UDID"
+          xcrun simctl bootstatus "$UDID" -b
+          xcrun simctl install "$UDID" "$APP"
+          mkdir -p shots
+          shot() { # name, wait seconds, launch args...
+            local name="$1" wait="$2"; shift 2
+            xcrun simctl terminate "$UDID" com.mangomods.ocrew 2>/dev/null || true
+            xcrun simctl launch "$UDID" com.mangomods.ocrew "$@"
+            sleep "$wait"
+            xcrun simctl io "$UDID" screenshot "shots/$name.png"
+          }
+          while read -r line; do
+            [ -z "$line" ] && continue
+            # shellcheck disable=SC2086
+            shot $line
+          done < tools/shots.txt
+          for f in shots/*.png; do sips -Z 1500 "$f" >/dev/null; done
+          ls -la shots
+
+      - name: Push screenshots to ci-screens
+        run: |
+          cp build.log shots/ || true
+          cd shots
+          git init -q -b ci-screens
+          git config user.name "ci"; git config user.email "ci@users.noreply.github.com"
+          git add -A && git commit -q -m "Screenshots for ${{ github.sha }}"
+          git push -q -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" ci-screens

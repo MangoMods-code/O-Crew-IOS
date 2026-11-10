@@ -244,6 +244,8 @@ final class ProductMesh {
         func m(_ contents: Any, shine: CGFloat) -> SCNMaterial {
             let mat = SCNMaterial()
             mat.diffuse.contents = contents
+            mat.diffuse.mipFilter = .linear
+            mat.diffuse.maxAnisotropy = 4
             mat.lightingModel = .blinn
             mat.specular.contents = UIColor(white: shine, alpha: 1)
             mat.shininess = 0.35
@@ -404,7 +406,9 @@ enum Packaging {
             attrs = [.font: UIFont.systemFont(ofSize: fontSize, weight: .black), .foregroundColor: ink, .paragraphStyle: para]
             let need = name.boundingRect(with: CGSize(width: box.width, height: .greatestFiniteMagnitude),
                                          options: .usesLineFragmentOrigin, attributes: attrs, context: nil)
-            if need.height <= box.height { break }
+            // The longest word has to fit on one line too, or it gets split mid-word.
+            let widest = p.name.split(separator: " ").map { (String($0) as NSString).size(withAttributes: attrs).width }.max() ?? 0
+            if need.height <= box.height && widest <= box.width { break }
             fontSize -= 1
         }
         name.draw(with: box, options: .usesLineFragmentOrigin, attributes: attrs, context: nil)

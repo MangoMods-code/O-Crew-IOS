@@ -41,6 +41,12 @@ enum Difficulty: String, Codable, CaseIterable, Identifiable {
     var label: String { rawValue.capitalized }
 }
 
+enum Antialiasing: Int, Codable, CaseIterable, Identifiable {
+    case off = 1, x2 = 2, x4 = 4
+    var id: Int { rawValue }
+    var label: String { self == .off ? "Off" : "\(rawValue)x" }
+}
+
 enum FrameRateCap: Int, Codable, CaseIterable, Identifiable {
     case fps30 = 30, fps60 = 60, fps120 = 120
     var id: Int { rawValue }
@@ -114,6 +120,9 @@ struct DisplaySettings: Codable, Equatable {
     var cameraSmoothing: Double = 0.0
     var frameRate: FrameRateCap = .fps120
     var showArms = true
+    var antialiasing: Antialiasing = .x4
+    var shadows = true
+    var showScore = true
     // Accessibility
     var colorblind: ColorblindMode = .off
     var reduceMotion = false
@@ -121,6 +130,7 @@ struct DisplaySettings: Codable, Equatable {
     var haptics = true
     // Audio
     var sfxVolume: Double = 0.8
+    var musicVolume: Double = 0.5
     var footsteps = true
 }
 
@@ -167,7 +177,12 @@ struct GameSettings: Codable, Equatable {
 final class SettingsStore: ObservableObject {
     static let shared = SettingsStore()
 
-    @Published var display: DisplaySettings { didSet { save(display, key: Self.displayKey) } }
+    @Published var display: DisplaySettings {
+        didSet {
+            save(display, key: Self.displayKey)
+            if oldValue.musicVolume != display.musicVolume { Feedback.shared.applyMusicVolume() }
+        }
+    }
     @Published var game: GameSettings { didSet { save(game, key: Self.gameKey) } }
 
     private static let displayKey = "ocrew.display.v4"

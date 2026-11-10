@@ -41,36 +41,86 @@ extension GameWorld {
         onBasketChanged?()
     }
 
+    /// The basket shell is built once; only the pile of items inside is refreshed.
     func updateBasketVisual() {
-        basketNode.childNodes.forEach { $0.removeFromParentNode() }
-        let b = SCNNode()
-        b.position.y = -0.37   // top of the handle arc sits exactly in the fist
-        let handle = SCNNode(geometry: SCNTorus(ringRadius: 0.17, pipeRadius: 0.009))
-        handle.geometry?.firstMaterial = Models.mat(0x9E1B1B)
-        handle.eulerAngles.x = Float.pi / 2
-        handle.position.y = 0.2
-        b.addChildNode(handle)
-        let body = SCNNode(geometry: SCNBox(width: 0.42, height: 0.2, length: 0.3, chamferRadius: 0.025))
-        body.geometry?.firstMaterial = Models.mat(0xD62828)
-        body.position.y = 0.1
-        b.addChildNode(body)
-        let rim = SCNNode(geometry: SCNBox(width: 0.44, height: 0.03, length: 0.32, chamferRadius: 0.01))
-        rim.geometry?.firstMaterial = Models.mat(0x9E1B1B)
-        rim.position.y = 0.2
-        b.addChildNode(rim)
-        // Up to 8 things peeking out of the basket
-        for (i, it) in basket.prefix(8).enumerated() {
-            guard let p = Catalog.product(it.product) else { continue }
-            let n = Models.productNode(p, expired: it.expired)
-            let s = p.shape.size
-            let sc = min(1, 0.16 / max(s.w, s.h, s.d))
-            n.scale = SCNVector3(sc, sc, sc)
-            n.position = SCNVector3(-0.13 + Float(i % 4) * 0.087, 0.12 + Float(i / 4) * 0.03, -0.06 + Float(i / 4) * 0.1)
-            n.eulerAngles.y = Float(i) * 0.7
-            b.addChildNode(n)
+        if basketShell == nil {
+            let shell = SCNNode()
+            shell.position.y = -0.37   // the top of the handle arc sits in the fist
+            let b = MeshBuilder()
+            let outer = Mats.tiled("basket\(basketColor)", gloss: 0.3) { Self.basketTexture(self.basketColor) }
+            let inner = Mats.solid(Mats.shade(basketColor, 0.55), doubleSided: true)
+            let rim = Mats.solid(Mats.shade(basketColor, 0.8), gloss: 0.3)
+            // Tapered tub: wider at the top than the bottom.
+            let tw: Float = 0.22, td: Float = 0.15, bw: Float = 0.18, bd: Float = 0.12, h: Float = 0.2
+            let t = [SIMD3<Float>(-tw, h, td), SIMD3(tw, h, td), SIMD3(tw, h, -td), SIMD3(-tw, h, -td)]
+            let o = [SIMD3<Float>(-bw, 0, bd), SIMD3(bw, 0, bd), SIMD3(bw, 0, -bd), SIMD3(-bw, 0, -bd)]
+            let inset = SIMD3<Float>(0.97, 1, 0.97)
+            let lift = SIMD3<Float>(0, 0.012, 0)
+            let side: (SIMD2<Float>, SIMD2<Float>, SIMD2<Float>, SIMD2<Float>) = (SIMD2(0, 1), SIMD2(3, 1), SIMD2(3, 0), SIMD2(0, 0))
+            for i in 0..<4 {
+                let j = (i + 1) % 4
+                b.quad(o[i], o[j], t[j], t[i], outer, uv: side)
+                let ia: SIMD3<Float> = o[j] * inset + lift
+                let ib: SIMD3<Float> = o[i] * inset + lift
+                let ic: SIMD3<Float> = t[i] * inset
+                let id: SIMD3<Float> = t[j] * inset
+                b.quad(ia, ib, ic, id, inner)
+            }
+            b.quad(o[3], o[2], o[1], o[0], rim)                                  // underside
+            b.quad(o[0] + lift, o[1] + lift, o[2] + lift, o[3] + lift, inner)    // floor
+            b.box(0, h, td, tw * 2 + 0.03, 0.022, 0.022, rim)
+            b.box(0, h, -td, tw * 2 + 0.03, 0.022, 0.022, rim)
+            b.box(tw, h, 0, 0.022, 0.022, td * 2 + 0.03, rim)
+            b.box(-tw, h, 0, 0.022, 0.022, td * 2 + 0.03, rim)
+            if let tub = b.build() { shell.addChildNode(tub) }
+            let handle = SCNNode(geometry: SCNTorus(ringRadius: 0.17, pipeRadius: 0.0085))
+            handle.geometry?.firstMaterial = Mats.solid(0x1D2126, gloss: 0.4)
+            handle.eulerAngles.x = Float.pi / 2
+            handle.position.y = h
+            shell.addChildNode(handle)
+            let contents = SCNNode()
+            contents.name = "contents"
+            shell.addChildNode(contents)
+            basketNode.addChildNode(shell)
+            basketShell = shell
         }
-        Models.setCategory(b, 2)
-        basketNode.addChildNode(b)
+        guard let shell = basketShell, let contents = shell.childNode(withName: "contents", recursively: false) else { return }
+        contents.childNodes.forEach { $0.removeFromParentNode() }
+        // Up to 10 things sitting in the basket
+        let batch = MeshBatcher()
+        for (i, it) in basket.prefix(10).enumerated() {
+            guard let p = Catalog.product(it.product) else { continue }
+            let s = p.shape.size
+            let sc = min(1, 0.15 / max(s.w, s.h, s.d))
+            var scale = matrix_identity_float4x4
+            scale.columns.0.x = sc; scale.columns.1.y = sc; scale.columns.2.z = sc
+            let x = -0.13 + Float(i % 4) * 0.087 + (i >= 8 ? 0.04 : 0)
+            let z = -0.07 + Float((i / 4) % 2) * 0.12
+            let y = 0.02 + Float(i / 8) * 0.08
+            let m = Models.translate(x, y, z) * Models.rotate(Float(i) * 0.9, SIMD3(0, 1, 0)) * scale
+            batch.add(Models.template(p, expired: it.expired), transform: m)
+        }
+        if let pile = batch.build() { contents.addChildNode(pile) }
+        Models.setCategory(shell, 2)
+        func noShadow(_ n: SCNNode) { n.castsShadow = false; n.childNodes.forEach(noShadow) }
+        noShadow(shell)
+    }
+
+    static func basketTexture(_ color: UInt32) -> UIImage {
+        let size = CGSize(width: 64, height: 64)
+        let f = UIGraphicsImageRendererFormat(); f.scale = 1; f.opaque = true
+        return UIGraphicsImageRenderer(size: size, format: f).image { ctx in
+            let c = ctx.cgContext
+            c.setFillColor(UIColor(hex: color).cgColor)
+            c.fill(CGRect(origin: .zero, size: size))
+            c.setFillColor(UIColor(hex: Mats.shade(color, 0.5)).cgColor)
+            for i in 0..<4 {
+                c.addPath(UIBezierPath(roundedRect: CGRect(x: 5 + i * 16, y: 14, width: 6, height: 40), cornerRadius: 3).cgPath)
+            }
+            c.fillPath()
+            c.setFillColor(UIColor(white: 1, alpha: 0.12).cgColor)
+            c.fill(CGRect(x: 0, y: 0, width: 64, height: 6))
+        }
     }
 
     // MARK: Actions
@@ -131,6 +181,7 @@ extension GameWorld {
             let need = p.fixture == .shelf ? "a regular shelf" : "a \(p.fixture.label.lowercased())"
             toast("\(p.name) goes on \(need)", .warn)
             Feedback.shared.play(.bonk, volume: 0.6)
+            noteMistake()
             return
         }
         if game.strictPlacement && (it.expired || slot.category != it.category) {
@@ -145,6 +196,7 @@ extension GameWorld {
             toast(msg, .warn)
             Feedback.shared.play(.bonk, volume: 0.6)
             Feedback.shared.haptic(.warning)
+            noteMistake()
             return
         }
         if let k = slot.key, k != it.key {
@@ -173,29 +225,98 @@ extension GameWorld {
         rig?.reach(now: time)
         basket.removeAll { $0 === it }
         slot.items.append(it)
-        slot.rebuild()
+        slot.rebuild(pop: true)
         slot.refreshTag(visible: display.showShelfTags)
+        flyToShelf(p, expired: it.expired, to: slot.nextItemWorldPosition)
         placedCount += 1
 
         let correct = slot.isCorrect
-        if !correct { mistakes += 1 }
-        if game.placementFeedback {
-            if correct {
+        if correct {
+            let before = multiplier
+            streak = time - lastCorrectAt <= GameWorld.comboWindow ? streak + 1 : 1
+            lastCorrectAt = time
+            bestStreak = max(bestStreak, streak)
+            var points = 10 * multiplier
+            if slot.isFull { points += 25 * multiplier }
+            addPoints(points)
+            if game.placementFeedback {
                 Feedback.shared.play(slot.isFull ? .ding : .place, volume: 0.8)
-                sparkle(at: slot.worldCenter, big: slot.isFull)
+                if slot.isFull { sparkle(at: slot.worldCenter, big: true) }
             } else {
-                Feedback.shared.play(.bonk, volume: 0.5)
-                if time - lastWrongToast > 3 {
-                    lastWrongToast = time
-                    toast(it.expired ? "That one's expired — it belongs in the trash" : "Hmm… that doesn't look like the right section", .warn)
-                }
+                Feedback.shared.play(.place, volume: 0.7)
+            }
+            if multiplier > before {
+                Feedback.shared.play(Sound.combo(multiplier), volume: 0.7)
+                Feedback.shared.haptic(.medium)
+            }
+            if slot.isFull {
+                fixtures[slot.fixture].refreshLabels(showLabels: display.showRowLabels, signScale: Float(display.signScale),
+                                                     glow: scannerCategory != nil, glowCategory: scannerCategory)
+                checkSection(slot.category)
             }
         } else {
-            Feedback.shared.play(.place, volume: 0.7)
+            noteMistake()
+            Feedback.shared.play(game.placementFeedback ? .bonk : .place, volume: 0.5)
+            if game.placementFeedback && time - lastWrongToast > 3 {
+                lastWrongToast = time
+                toast(it.expired ? "That one's expired — it belongs in the trash" : "Hmm… that doesn't look like the right section", .warn)
+            }
         }
         Feedback.shared.haptic(.light)
         basketChanged()
         checkComplete()
+    }
+
+    func addPoints(_ points: Int) {
+        score += points
+        onPoints?(points, multiplier)
+    }
+
+    /// A wrong attempt: breaks the combo and counts once (holding the button doesn't spam it).
+    func noteMistake() {
+        streak = 0
+        if time - lastMistakeAt > 1.0 {
+            lastMistakeAt = time
+            mistakes += 1
+        }
+    }
+
+    func sectionDone(_ cat: String) -> Bool {
+        var any = false
+        for f in fixtures {
+            for sl in f.slots where sl.category == cat {
+                any = true
+                if !(sl.isFull && sl.isCorrect) { return false }
+            }
+        }
+        return any
+    }
+
+    /// Celebrates a whole section (every spot under that label) being fully stocked.
+    func checkSection(_ cat: String?) {
+        guard let cat = cat, !completedSections.contains(cat), sectionDone(cat) else { return }
+        completedSections.insert(cat)
+        addPoints(200)
+        toast("\(SectionStyle.icon(cat)) \(cat) fully stocked!  +200", .good)
+        Feedback.shared.play(.section, volume: 0.8)
+        Feedback.shared.haptic(.success)
+        let spots = fixtures.flatMap { $0.slots }.filter { $0.category == cat }.prefix(10)
+        for sl in spots { sparkle(at: sl.worldCenter, big: true) }
+    }
+
+    /// A copy of the product flying from your hand to its place on the shelf.
+    func flyToShelf(_ p: Product, expired: Bool, to dest: SIMD3<Float>) {
+        guard !display.reduceMotion else { return }
+        let n = Models.productNode(p, expired: expired)
+        let right = SIMD3<Float>(cos(yaw), 0, -sin(yaw))
+        n.simdPosition = cameraWorldPosition + cameraNode.simdWorldFront * 0.35 + right * 0.18 + SIMD3(0, -0.28, 0)
+        n.simdEulerAngles = SIMD3(0, yaw, 0)
+        n.categoryBitMask = Models.categoryNoHit
+        n.castsShadow = false
+        scene.rootNode.addChildNode(n)
+        let move = SCNAction.move(to: SCNVector3(dest.x, dest.y - p.shape.size.h / 2, dest.z), duration: 0.11)
+        move.timingMode = .easeOut
+        n.runAction(.sequence([move, .removeFromParentNode()]))
     }
 
     func takeBack(from slot: Slot) {
@@ -208,6 +329,9 @@ extension GameWorld {
         rig?.reach(now: time)
         slot.rebuild()
         slot.refreshTag(visible: display.showShelfTags)
+        if let cat = slot.category { completedSections.remove(cat) }
+        fixtures[slot.fixture].refreshLabels(showLabels: display.showRowLabels, signScale: Float(display.signScale),
+                                             glow: scannerCategory != nil, glowCategory: scannerCategory)
         basket.append(it)
         selectedKey = it.key
         Feedback.shared.play(.pickup, volume: 0.6)
@@ -329,6 +453,9 @@ extension GameWorld {
             guard moved > 0 else { toast("No room for these items on their shelves", .warn); return false }
             Feedback.shared.play(.ding)
             toast("Auto-sorted \(moved) item\(moved == 1 ? "" : "s")", .good)
+            addPoints(moved * 10)
+            refreshSigns()
+            for cat in Set(fixtures.flatMap { $0.slots }.compactMap { $0.category }) { checkSection(cat) }
             basketChanged()
             checkComplete()
         }
@@ -361,6 +488,7 @@ extension GameWorld {
         n.simdPosition = cameraWorldPosition + SIMD3(0, -0.4, 0)
         Models.setCategory(n, Models.categoryNoHit)
         scene.rootNode.addChildNode(n)
+        n.castsShadow = false
         n.runAction(.sequence([.move(to: SCNVector3(p.x, p.y, p.z), duration: 0.45), .removeFromParentNode()]))
         sparkle(at: p, big: false)
     }
@@ -372,14 +500,21 @@ extension GameWorld {
         completed = true
         let t = elapsed
         let stars = t <= par ? 3 : t <= par * 1.5 ? 2 : 1
-        let prev = ProgressStore.shared.complete(level, stars: stars, time: t)
+        let timeBonus = max(0, Int((1 - t / (par * 1.5)) * 1000))
+        let cleanBonus = mistakes == 0 ? 300 : 0
+        let final = score + timeBonus + cleanBonus
+        let prev = ProgressStore.shared.complete(level, stars: stars, time: t, score: final, items: total, streak: bestStreak)
         Feedback.shared.play(.complete)
         Feedback.shared.haptic(.success)
         // A celebratory burst on a handful of shelves (not all of them: that would hitch).
         let full = fixtures.flatMap { $0.slots }.filter { $0.isFull }.shuffled().prefix(16)
         for s in full { sparkle(at: s.worldCenter, big: true) }
         let result = LevelResult(level: level, time: t, par: par, stars: stars, mistakes: mistakes, items: total,
-                                 bestTime: prev, newBest: prev == nil || t < prev!, next: Levels.next(after: level.id))
+                                 bestTime: prev.time, newBest: prev.time == nil || t < (prev.time ?? 0),
+                                 score: final, baseScore: score, timeBonus: timeBonus, cleanBonus: cleanBonus,
+                                 bestStreak: bestStreak, bestScore: prev.score,
+                                 newBestScore: prev.score == nil || final > (prev.score ?? 0),
+                                 next: Levels.next(after: level.id))
         onComplete?(result)
     }
 
@@ -391,7 +526,7 @@ extension GameWorld {
         case 0: return "This store is a disaster! Look at a product on the floor and tap it (or press the hand) to put it in your basket."
         case 1: return "Read the signs above the shelves and the labels on each shelf row to work out where it goes. Then tap a spot to place it."
         case 2: return "Identical items go together. Cold stuff lives in fridges and freezers. Tap the icons in your basket bar to choose what to place."
-        case 3: return "Get every item from the floor into its right section to finish. Faster = more stars. Skills on the right help when you're stuck."
+        case 3: return "Place items back to back to build a combo for more points. Fill every shelf to finish — faster means more stars. Skills on the right help when you're stuck."
         default: return nil
         }
     }

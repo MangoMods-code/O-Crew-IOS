@@ -64,6 +64,8 @@ final class GameWorld {
     var chunksDirty = false
     var lastFOV: Double = 0
     var rig: FirstPersonRig?
+    var basketShell: SCNNode?
+    var basketColor: UInt32 = 0xD62828
     var lookDelta = SIMD2<Float>(0, 0)
     var lastStep = 0
 
@@ -81,10 +83,24 @@ final class GameWorld {
     var tutorialActive = false
     var tutorialStep = 0
 
+    // MARK: Score & combo
+    var score = 0
+    var streak = 0
+    var bestStreak = 0
+    var lastCorrectAt: Double = -100
+    var lastMistakeAt: Double = -100
+    var completedSections: Set<String> = []
+    static let comboWindow = 4.5
+    /// x1…x5: goes up every 4 correct placements in a row.
+    var multiplier: Int { min(5, 1 + streak / 4) }
+    /// How much of the combo timer is left (1 = just placed, 0 = about to drop).
+    var comboFraction: Double { streak > 0 ? max(0, 1 - (time - lastCorrectAt) / GameWorld.comboWindow) : 0 }
+
     // MARK: Callbacks
     var onToast: ((String, ToastStyle) -> Void)?
     var onComplete: ((LevelResult) -> Void)?
     var onBasketChanged: (() -> Void)?
+    var onPoints: ((Int, Int) -> Void)?
 
     var display: DisplaySettings { SettingsStore.shared.display }
     var game: GameSettings { SettingsStore.shared.game }
@@ -119,8 +135,9 @@ final class GameWorld {
         }
         func units(_ k: FixtureKind) -> Int { Int(ceil(Double(rowQueues[k]?.count ?? 0) / 3)) }
         let cold = Array(repeating: FixtureKind.fridge, count: units(.fridge)) + Array(repeating: FixtureKind.freezer, count: units(.freezer))
-        let extra = Float(level.products.count / 6) + (level.stage == 3 ? 1 : 0)
-        layout = StoreLayout.fit(cold: cold, shelves: max(1, units(.shelf)), minWidth: 9 + extra, minDepth: 11 + extra)
+        // Room grows gently with the amount of stock, so the mess always has space to spread out.
+        let extra = Float(active.count / 6) + (level.stage == 3 ? 1 : 0)
+        layout = StoreLayout.fit(cold: cold, shelves: max(1, units(.shelf)), minWidth: 8 + extra * 0.5, minDepth: 10 + extra * 0.5)
         playerPos = layout.playerStart
 
         let hl = SCNNode(geometry: SCNBox(width: 1, height: 1, length: 1, chamferRadius: 0))
@@ -167,7 +184,7 @@ final class GameWorld {
             }
         }
 
-        if let s = save, s.fixtureCount == fixtures.count, restore(s) {
+        if let s = save, s.fixtureCount == fixtures.count, s.layoutVersion == LevelSave.currentLayout, restore(s) {
             // restored
         } else {
             generateMess()
@@ -361,8 +378,11 @@ final class GameWorld {
                 for it in s.items { saves.append(ItemSave(product: it.product, expired: it.expired, loc: 2, f: f.index, s: s.index)) }
             }
         }
-        ProgressStore.shared.store(LevelSave(levelID: level.id, elapsed: elapsed, mistakes: mistakes, binned: binned,
-                                             total: total, fixtureCount: fixtures.count, items: saves))
+        var save = LevelSave(levelID: level.id, elapsed: elapsed, mistakes: mistakes, binned: binned,
+                             total: total, fixtureCount: fixtures.count, items: saves)
+        save.score = score
+        save.bestStreak = bestStreak
+        ProgressStore.shared.store(save)
     }
 
     private func restore(_ s: LevelSave) -> Bool {
@@ -395,167 +415,13 @@ final class GameWorld {
             }
         }
         selectedKey = basket.first?.key
+        score = s.score ?? 0
+        bestStreak = s.bestStreak ?? 0
+        for cat in Set(fixtures.flatMap { $0.slots }.compactMap { $0.category }) where sectionDone(cat) {
+            completedSections.insert(cat)
+        }
+        refreshSigns()
         return true
-    }
-
-    // MARK: Scene
-
-    private func buildScene() {
-        let W = layout.width, D = layout.depth
-        scene.background.contents = UIColor(hex: 0x9CC9EA)
-        let root = SCNNode()   // static geometry, merged into one mesh below
-        let theme = level.theme
-
-        let floor = SCNPlane(width: CGFloat(W), height: CGFloat(D))
-        let fm = Models.imageMat(Models.checkerImage(theme.floor, theme.floorAlt, grout: theme.floorAlt &- 0x101010))
-        fm.diffuse.wrapS = .repeat
-        fm.diffuse.wrapT = .repeat
-        fm.diffuse.contentsTransform = SCNMatrix4MakeScale(W / 1.2, D / 1.2, 1)
-        floor.firstMaterial = fm
-        let floorNode = SCNNode(geometry: floor)
-        floorNode.eulerAngles.x = -Float.pi / 2
-        floorNode.position = SCNVector3(W / 2, 0, D / 2)
-        floorNode.categoryBitMask = Models.categoryNoHit
-        root.addChildNode(floorNode)
-
-        let H: Float = 3.2, t = layout.wallThickness
-        func wall(_ x0: Float, _ z0: Float, _ x1: Float, _ z1: Float, _ h: Float, _ y: Float) {
-            let n = Models.box(max(0.01, x1 - x0), h, max(0.01, z1 - z0), theme.wall)
-            n.position = SCNVector3((x0 + x1) / 2, y + h / 2, (z0 + z1) / 2)
-            root.addChildNode(n)
-        }
-        wall(-t, -t, W + t, 0, H, 0)
-        wall(-t, 0, 0, D + t, H, 0)
-        wall(W, 0, W + t, D + t, H, 0)
-        wall(-t, D, layout.doorMinX, D + t, H, 0)
-        wall(layout.doorMaxX, D, W + t, D + t, H, 0)
-        wall(layout.doorMinX, D, layout.doorMaxX, D + t, H - 2.4, 2.4)
-        // Closed double doors: steel frames with frosted panels
-        let doorW = layout.doorMaxX - layout.doorMinX
-        let dcx = (layout.doorMinX + layout.doorMaxX) / 2
-        for side in [Float(-1), Float(1)] {
-            let cx = dcx + side * doorW / 4
-            let frame = Models.box(doorW / 2 - 0.02, 2.4, 0.06, 0x5D6D7E)
-            frame.position = SCNVector3(cx, 1.2, D + 0.03)
-            root.addChildNode(frame)
-            let pane = Models.box(doorW / 2 - 0.2, 1.9, 0.07, 0xDCE6EC)
-            pane.position = SCNVector3(cx, 1.3, D + 0.03)
-            root.addChildNode(pane)
-            let bar = Models.box(doorW / 2 - 0.3, 0.05, 0.1, 0xB0B7BD)
-            bar.position = SCNVector3(cx, 1.05, D - 0.03)
-            root.addChildNode(bar)
-        }
-        let closed = Models.billboardText("SORRY, WE'RE CLOSED", color: .white, bg: UIColor(hex: 0xB03A2E), width: 1.8, height: 0.24, fontSize: 40)
-        closed.constraints = nil
-        closed.eulerAngles.y = Float.pi
-        closed.position = SCNVector3(dcx, 1.7, D - 0.04)
-        closed.geometry?.firstMaterial?.readsFromDepthBuffer = true
-        scene.rootNode.addChildNode(closed)
-
-        func trim(_ x0: Float, _ z0: Float, _ x1: Float, _ z1: Float, y: Float, h: Float) {
-            let n = Models.box(max(0.01, x1 - x0), h, max(0.01, z1 - z0), theme.trim)
-            n.position = SCNVector3((x0 + x1) / 2, y, (z0 + z1) / 2)
-            n.categoryBitMask = Models.categoryNoHit
-            root.addChildNode(n)
-        }
-        for y in [Float(0.08), Float(2.6)] {
-            let h: Float = y < 1 ? 0.16 : 0.22
-            trim(0, 0, W, 0.02, y: y, h: h)
-            trim(0, 0, 0.02, D, y: y, h: h)
-            trim(W - 0.02, 0, W, D, y: y, h: h)
-            trim(0, D - 0.02, layout.doorMinX, D, y: y, h: h)
-            trim(layout.doorMaxX, D - 0.02, W, D, y: y, h: h)
-        }
-        // Store name over the back wall
-        let name = Models.billboardText(theme.name.uppercased(), color: .white, bg: UIColor(hex: theme.trim), width: 3.6, height: 0.5, fontSize: 110)
-        name.constraints = nil
-        name.position = SCNVector3(W / 2, 2.95, 0.03)
-        name.geometry?.firstMaterial?.readsFromDepthBuffer = true
-        scene.rootNode.addChildNode(name)
-
-        let ceil = SCNNode(geometry: SCNPlane(width: CGFloat(W), height: CGFloat(D)))
-        ceil.geometry?.firstMaterial = Models.mat(0xF2F2EE)
-        ceil.eulerAngles.x = Float.pi / 2
-        ceil.position = SCNVector3(W / 2, H, D / 2)
-        ceil.categoryBitMask = Models.categoryNoHit
-        root.addChildNode(ceil)
-        var lx: Float = 1.5
-        while lx < W - 1 {
-            var lz: Float = 1.5
-            while lz < D - 1 {
-                let panel = SCNNode(geometry: SCNPlane(width: 1.2, height: 0.5))
-                panel.geometry?.firstMaterial = Models.emissive(0xFFFDF2)
-                panel.eulerAngles.x = Float.pi / 2
-                panel.position = SCNVector3(lx, H - 0.01, lz)
-                panel.categoryBitMask = Models.categoryNoHit
-                root.addChildNode(panel)
-                lz += 3
-            }
-            lx += 3
-        }
-
-        let env = Models.merged(root)
-        Models.setCategory(env, Models.categoryNoHit)
-        scene.rootNode.addChildNode(env)
-        let worldRoot = scene.rootNode
-
-        let ambient = SCNNode(); ambient.light = SCNLight()
-        ambient.light!.type = .ambient
-        ambient.light!.intensity = 540
-        ambient.light!.color = UIColor(hex: 0xFFF8EE)
-        worldRoot.addChildNode(ambient)
-        let sun = SCNNode(); sun.light = SCNLight()
-        sun.light!.type = .directional
-        sun.light!.intensity = 600
-        sun.eulerAngles = SCNVector3(Float(-1.05), Float(0.55), Float(0))
-        worldRoot.addChildNode(sun)
-        let fill = SCNNode(); fill.light = SCNLight()
-        fill.light!.type = .directional
-        fill.light!.intensity = 220
-        fill.eulerAngles = SCNVector3(Float(-0.6), Float.pi + 0.4, Float(0))
-        worldRoot.addChildNode(fill)
-
-        for (i, spec) in layout.fixtures.enumerated() {
-            let f = Fixture(index: i, spec: spec, shelfColor: theme.shelfColor)
-            fixtures.append(f)
-            worldRoot.addChildNode(f.node)
-        }
-
-        // Trash bin for expired stock
-        let bin = SCNNode()
-        bin.name = "bin"
-        let can = SCNNode(geometry: SCNCylinder(radius: 0.3, height: 0.85))
-        can.geometry?.firstMaterial = Models.mat(0x566573)
-        can.position.y = 0.425
-        bin.addChildNode(can)
-        let lid = SCNNode(geometry: SCNCylinder(radius: 0.32, height: 0.05))
-        lid.geometry?.firstMaterial = Models.mat(0xC0392B)
-        lid.position.y = 0.87
-        bin.addChildNode(lid)
-        let binSign = Models.billboardText("EXPIRED", color: .white, bg: UIColor(hex: 0xC0392B), width: 0.7, height: 0.18, fontSize: 60)
-        binSign.position.y = 1.25
-        binSign.geometry?.firstMaterial?.readsFromDepthBuffer = true
-        bin.addChildNode(binSign)
-        bin.position = SCNVector3(layout.bin.center.x, 0, layout.bin.center.y)
-        worldRoot.addChildNode(bin)
-
-        // Player + held basket
-        playerNode.simdPosition = SIMD3(playerPos.x, 0, playerPos.y)
-        let cam = SCNCamera()
-        cam.projectionDirection = .horizontal
-        cam.fieldOfView = CGFloat(display.fieldOfView)
-        cam.zNear = 0.05
-        cam.zFar = 80
-        cameraNode.camera = cam
-        cameraNode.position = SCNVector3(0, eyeHeight, 0)
-        playerNode.addChildNode(cameraNode)
-        let arms = FirstPersonRig(sleeve: theme.trim, skin: 0xE0AC69)
-        arms.basketHolder.addChildNode(basketNode)
-        basketNode.scale = SCNVector3(0.8, 0.8, 0.8)
-        cameraNode.addChildNode(arms.root)
-        rig = arms
-        worldRoot.addChildNode(playerNode)
-        worldRoot.addChildNode(highlightNode)
     }
 
     // MARK: Per-frame
@@ -574,6 +440,7 @@ final class GameWorld {
         time += dt
         if !completed && !skills.isActive(.freeze, now: time) { elapsed += dt }
         updatePlayer(dt: Float(dt), move: move)
+        if streak > 0 && time - lastCorrectAt > GameWorld.comboWindow { streak = 0 }
         rebuildChunks(limit: 2)
         if scannerCategory != nil && !skills.isActive(.scanner, now: time) {
             scannerCategory = nil

@@ -18,7 +18,7 @@ struct RootView: View {
         case game(String, UUID)
     }
 
-    @State private var screen: Screen = .menu
+    @State private var screen: Screen = DebugShot.level.map { .game($0, UUID()) } ?? .menu
 
     var body: some View {
         ZStack {
@@ -41,6 +41,6 @@ struct RootView: View {
                 }
             }
         }
-        .onAppear { _ = Feedback.shared }
+        .onAppear { Feedback.shared.startMusic() }
     }
 }

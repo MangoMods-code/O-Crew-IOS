@@ -102,7 +102,9 @@ final class Slot {
 
     var isFull: Bool { !items.isEmpty && items.count >= capacity }
 
-    func rebuild() {
+    /// Rebuilds the stock in this spot as one mesh. Every item you place shows as a column
+    /// running back into the shelf, so a full spot looks properly stocked.
+    func rebuild(pop: Bool = false) {
         contentNode?.removeFromParentNode()
         contentNode = nil
         guard let first = items.first, let p = Catalog.product(first.product) else { return }
@@ -110,34 +112,45 @@ final class Slot {
         let cols = max(1, Int((width - 0.02) / (s.w + 0.012)))
         let stack = p.shape.stackable ? max(1, min(2, Int((height - 0.06) / (s.h + 0.004)))) : 1
         let cellW = (width - 0.02) / Float(cols)
-        let z = -min(depth * 0.35, s.d / 2 + 0.06)   // a neat front-facing row
+        let zf = min(depth * 0.35, s.d / 2 + 0.05)          // front row, just behind the shelf edge
+        let z = -zf
+        let step = s.d + 0.012
+        let deep = max(1, min(3, Int((depth - 0.02 - s.d / 2 - zf) / step) + 1))
         let batch = MeshBatcher()
-        let container = SCNNode()
         let tmpl = Models.template(p, expired: first.expired)
         for i in 0..<items.count {
             let col = (i / stack) % cols
             let layer = i % stack
             let x = -(width - 0.02) / 2 + (Float(col) + 0.5) * cellW
             let y = Float(layer) * (s.h + 0.004) + 0.002
-            batch.add(tmpl, transform: Models.translate(x, y, z))
-        }
-        let flat: SCNNode
-        if let merged = batch.build() {
-            flat = merged
-        } else {
-            for i in 0..<items.count {
-                let col = (i / stack) % cols
-                let layer = i % stack
-                let x = -(width - 0.02) / 2 + (Float(col) + 0.5) * cellW
-                let unit = Models.productNode(p, expired: first.expired)
-                unit.position = SCNVector3(x, Float(layer) * (s.h + 0.004) + 0.002, z)
-                container.addChildNode(unit)
+            for r in 0..<deep {
+                batch.add(tmpl, transform: Models.translate(x, y, z - Float(r) * step))
             }
-            flat = container
         }
-        Models.setCategory(flat, Models.categoryNoHit)   // taps go to the slot's hit box
+        guard let flat = batch.build() else { return }
+        Models.setCategory(flat, Models.categoryNoHit)   // taps go to the slot's own box
         node.addChildNode(flat)
         contentNode = flat
+        if pop {
+            flat.scale = SCNVector3(1.035, 1.06, 1.035)
+            let settle = SCNAction.scale(to: 1, duration: 0.12)
+            settle.timingMode = .easeOut
+            flat.runAction(settle)
+        }
+    }
+
+    /// Where the next item will sit, in world space (for the fly-in animation).
+    var nextItemWorldPosition: SIMD3<Float> {
+        guard let first = items.first, let p = Catalog.product(first.product) else { return worldCenter }
+        let s = p.shape.size
+        let cols = max(1, Int((width - 0.02) / (s.w + 0.012)))
+        let stack = p.shape.stackable ? max(1, min(2, Int((height - 0.06) / (s.h + 0.004)))) : 1
+        let cellW = (width - 0.02) / Float(cols)
+        let i = max(0, items.count - 1)
+        let x = -(width - 0.02) / 2 + (Float((i / stack) % cols) + 0.5) * cellW
+        let y = Float(i % stack) * (s.h + 0.004) + s.h / 2
+        let w = node.simdConvertPosition(SIMD3(x, y, -min(depth * 0.35, s.d / 2 + 0.05)), to: nil)
+        return w
     }
 
     func refreshTag(visible: Bool) {
@@ -160,18 +173,20 @@ final class Fixture {
     /// Solid panels that block taps (back + ends), world-space boxes.
     var occluders: [(SIMD3<Float>, SIMD3<Float>)] = []
     private var rowLabelNodes: [SCNNode] = []
+    private var rowLabelKeys: [String] = ["", "", ""]
     private let signNode = SCNNode()
+    private var signKey = ""
 
     var kind: FixtureKind { spec.kind }
 
-    init(index: Int, spec: FixtureSpec, shelfColor: UInt32) {
+    init(index: Int, spec: FixtureSpec, shelfColor: UInt32, trim: UInt32) {
         self.index = index
         self.spec = spec
         node = SCNNode()
         node.name = "fixture:\(index)"
         node.simdPosition = SIMD3(spec.center.x, 0, spec.center.y)
         node.simdEulerAngles = SIMD3(0, atan2(spec.normal.x, spec.normal.y), 0)
-        buildFrame(shelfColor: shelfColor)
+        buildFrame(shelfColor: shelfColor, trim: trim)
 
         let usableDepth = spec.depth - 0.06
         var idx = 0
@@ -184,18 +199,20 @@ final class Fixture {
                 slots.append(slot)
                 idx += 1
             }
-            // Row label strip on the shelf lip
-            let label = SCNNode(geometry: SCNPlane(width: CGFloat(spec.length - 0.1), height: 0.055))
+            // Section label on the shelf edge
+            let label = SCNNode(geometry: SCNPlane(width: CGFloat(spec.length - 0.1), height: 0.06))
             let m = SCNMaterial()
             m.lightingModel = .constant
+            m.diffuse.mipFilter = .linear
             label.geometry?.firstMaterial = m
-            label.position = SCNVector3(0, y - 0.03, spec.depth / 2 + 0.004)
+            label.position = SCNVector3(0, y - 0.03, spec.depth / 2 + 0.008)
             label.categoryBitMask = Models.categoryNoHit
+            label.castsShadow = false
             node.addChildNode(label)
             rowLabelNodes.append(label)
         }
         signNode.categoryBitMask = Models.categoryNoHit
-        signNode.position = SCNVector3(0, spec.height + 0.32, spec.depth / 2 - 0.1)
+        signNode.position = SCNVector3(0, spec.height + 0.42, spec.depth / 2 - 0.1)
         node.addChildNode(signNode)
 
         let yaw = atan2(spec.normal.x, spec.normal.y)
@@ -230,72 +247,135 @@ final class Fixture {
         refreshLabels(showLabels: showLabels, signScale: signScale, glow: false)
     }
 
+    /// Spots that are full of the right stock.
+    var doneSlots: Int { slots.filter { $0.isFull && $0.isCorrect }.count }
+    var isDone: Bool { doneSlots == slots.count }
+
     func refreshLabels(showLabels: Bool, signScale: Float, glow: Bool, glowCategory: String? = nil) {
         for (i, n) in rowLabelNodes.enumerated() {
             let cat = rowCategories[i]
             n.isHidden = !showLabels
             let lit = glow && cat != nil && cat == glowCategory
-            n.geometry?.firstMaterial?.diffuse.contents = Models.rowLabelImage(cat ?? "—", lit: lit)
+            let key = (cat ?? "-") + (lit ? "|1" : "|0")
+            if key != rowLabelKeys[i] {
+                rowLabelKeys[i] = key
+                n.geometry?.firstMaterial?.diffuse.contents = Models.rowLabelImage(cat, lit: lit)
+            }
         }
-        // Top sign: unique categories on this unit
-        signNode.childNodes.forEach { $0.removeFromParentNode() }
+        // Hanging sign: the sections on this unit, with how much of it is stocked.
         var seen: [String] = []
         for c in rowCategories.compactMap({ $0 }) where !seen.contains(c) { seen.append(c) }
-        guard !seen.isEmpty else { return }
+        guard !seen.isEmpty else { signNode.childNodes.forEach { $0.removeFromParentNode() }; signKey = ""; return }
         let lit = glow && glowCategory != nil && seen.contains(glowCategory!)
-        let text = seen.joined(separator: " · ").uppercased()
-        let w = min(spec.length, Float(max(0.9, Double(text.count) * 0.085))) * signScale
-        let plane = SCNPlane(width: CGFloat(w), height: CGFloat(0.3 * signScale))
+        let done = doneSlots
+        let key = "\(seen.joined(separator: ","))|\(done)|\(lit)|\(signScale)"
+        guard key != signKey else { return }
+        signKey = key
+        signNode.childNodes.forEach { $0.removeFromParentNode() }
+        let w = 1.55 * signScale, h = w * 150 / 512
+        let plane = SCNPlane(width: CGFloat(w), height: CGFloat(h))
         let m = SCNMaterial()
         m.lightingModel = .constant
-        m.isDoubleSided = true
-        m.diffuse.contents = Models.signImage(text, lit: lit)
+        m.diffuse.mipFilter = .linear
+        m.diffuse.contents = Models.sectionSign(seen, done: done, total: slots.count, lit: lit)
         plane.firstMaterial = m
         let n = SCNNode(geometry: plane)
         n.categoryBitMask = Models.categoryNoHit
+        n.castsShadow = false
         signNode.addChildNode(n)
-        let hanger = Models.box(0.02, 0.3, 0.02, 0x555555)
-        hanger.categoryBitMask = Models.categoryNoHit
-        for x in [-w / 2 + 0.1, w / 2 - 0.1] {
-            let h = hanger.clone()
-            h.position = SCNVector3(x, 0.15 * signScale + 0.12, 0)
-            signNode.addChildNode(h)
+        // Plain dark back, so the sign never shows mirrored text from behind.
+        let backPlane = SCNPlane(width: CGFloat(w), height: CGFloat(h))
+        backPlane.cornerRadius = CGFloat(h * 0.16)
+        let bm = SCNMaterial()
+        bm.lightingModel = .constant
+        bm.diffuse.contents = UIColor(hex: 0x161C26)
+        backPlane.firstMaterial = bm
+        let backNode = SCNNode(geometry: backPlane)
+        backNode.eulerAngles = SCNVector3(Float(0), Float.pi, Float(0))
+        backNode.position = SCNVector3(0, 0, -0.004)
+        backNode.categoryBitMask = Models.categoryNoHit
+        backNode.castsShadow = false
+        signNode.addChildNode(backNode)
+        for x in [-w / 2 + 0.12, w / 2 - 0.12] {
+            let wire = Models.box(0.012, 0.5, 0.012, 0x8A8F96)
+            wire.categoryBitMask = Models.categoryNoHit
+            wire.castsShadow = false
+            wire.position = SCNVector3(x, h / 2 + 0.25, 0)
+            signNode.addChildNode(wire)
         }
     }
 
-    private func buildFrame(shelfColor: UInt32) {
+    private func buildFrame(shelfColor: UInt32, trim: UInt32) {
         let L = spec.length, D = spec.depth, H = spec.height
-        let isCold = spec.kind != .shelf
-        let frameColor: UInt32 = isCold ? (spec.kind == .fridge ? 0x3B4651 : 0xE3EEF4) : shelfColor
-        let backColor: UInt32 = isCold ? 0xF4F8FA : shelfColor
-
-        let frame = SCNNode()
-        func add(_ n: SCNNode, _ x: Float, _ y: Float, _ z: Float) {
-            n.position = SCNVector3(x, y, z)
-            frame.addChildNode(n)
+        let b = MeshBuilder()
+        switch spec.kind {
+        case .shelf:
+            let dark = Mats.solid(Mats.shade(shelfColor, 0.5), gloss: 0.2)
+            let boardHex = Mats.mix(shelfColor, 0xFFFFFF, 0.6)
+            let board = Mats.solid(boardHex, gloss: 0.25)
+            let side = Mats.solid(Mats.mix(shelfColor, 0xFFFFFF, 0.35), gloss: 0.15)
+            let back = Mats.tiled("peg\(shelfColor)") { Mats.pegboard(Mats.mix(shelfColor, 0xFFFFFF, 0.72)) }
+            let rail = Mats.solid(trim, gloss: 0.25)
+            b.box(0, 0.05, 0, L, 0.1, D, dark)                                           // kick plate
+            b.box(0, H / 2 + 0.05, -D / 2 + 0.015, L - 0.04, H - 0.1, 0.03, back, uvScale: 5)   // pegboard back
+            for x in [-L / 2 + 0.02, L / 2 - 0.02] { b.box(x, H / 2, 0, 0.04, H, D, side) }     // end panels
+            b.box(0, H / 2 + 0.03, -0.02, 0.02, H - 0.14, D - 0.08, side)                // divider
+            for x in [-L / 2 + 0.05, 0, L / 2 - 0.05] { b.box(x, H / 2, -D / 2 + 0.045, 0.05, H, 0.03, dark) }   // uprights
+            for (i, y) in spec.levelHeights.enumerated() {
+                if i > 0 { b.box(0, y - 0.015, 0.0, L - 0.08, 0.03, D - 0.04, board) }   // shelf board
+                b.box(0, y - 0.03, D / 2 - 0.006, L - 0.08, 0.064, 0.012, rail)          // price rail
+            }
+            b.box(0, H - 0.02, 0, L, 0.04, D, dark)                                      // top
+            b.box(0, H + 0.06, D / 2 - 0.02, L, 0.12, 0.03, rail)                        // header strip
+        case .fridge, .freezer:
+            let fridge = spec.kind == .fridge
+            let shell = Mats.solid(fridge ? 0x2A3038 : 0xE4EAEE, gloss: 0.35)
+            let inner = Mats.glow(fridge ? 0xF4F9FC : 0xEAF6FF)
+            let wire = Mats.solid(0xC5CED6, gloss: 0.4)
+            let accent = Mats.solid(fridge ? 0x3E8EDE : 0x66C7F4, gloss: 0.3)
+            let grille = Mats.solid(0x14181D)
+            let metal = Mats.solid(0xB9C0C7, gloss: 0.6)
+            b.box(0, 0.07, 0, L, 0.14, D, shell)                                         // base
+            b.box(0, 0.07, D / 2 + 0.002, L - 0.16, 0.06, 0.004, grille)                 // vent grille
+            b.box(0, H / 2 + 0.07, -D / 2 + 0.03, L - 0.08, H - 0.14, 0.02, inner)       // lit back wall
+            for x in [-L / 2 + 0.025, L / 2 - 0.025] { b.box(x, H / 2, 0, 0.05, H, D, shell) }
+            b.box(0, H - 0.07, 0, L, 0.14, D, shell)                                     // top box
+            b.box(0, H - 0.07, D / 2 + 0.002, L - 0.1, 0.07, 0.004, accent)              // brand strip
+            b.box(0, H - 0.155, D / 2 - 0.06, L - 0.12, 0.02, 0.04, Mats.glow(0xFFFFFF)) // light bar
+            b.box(0, H / 2, D / 2 - 0.025, 0.04, H - 0.28, 0.05, shell)                  // door mullion
+            for (i, y) in spec.levelHeights.enumerated() {
+                if i > 0 { b.box(0, y - 0.01, -0.01, L - 0.1, 0.014, D - 0.1, wire) }
+                b.box(0, y - 0.03, D / 2 - 0.05, L - 0.1, 0.06, 0.01, wire)
+            }
+            // Door frames + handles (the glass itself is a separate see-through node)
+            for sx in [Float(-1), Float(1)] {
+                let cx = sx * L / 4
+                let w = L / 2 - 0.05
+                b.box(cx, H - 0.165, D / 2 + 0.02, w, 0.035, 0.02, shell)
+                b.box(cx, 0.16, D / 2 + 0.02, w, 0.035, 0.02, shell)
+                b.box(cx - w / 2 + 0.015, H / 2, D / 2 + 0.02, 0.03, H - 0.3, 0.02, shell)
+                b.box(cx + w / 2 - 0.015, H / 2, D / 2 + 0.02, 0.03, H - 0.3, 0.02, shell)
+                b.box(cx - sx * (w / 2 - 0.1), H / 2, D / 2 + 0.05, 0.022, 0.55, 0.025, metal)
+            }
         }
-        add(Models.box(L, 0.1, D, frameColor), 0, 0.05, 0)
-        add(Models.box(L, H, 0.04, backColor), 0, H / 2, -D / 2 + 0.02)
-        add(Models.box(0.04, H, D, frameColor), -L / 2 + 0.02, H / 2, 0)
-        add(Models.box(0.04, H, D, frameColor), L / 2 - 0.02, H / 2, 0)
-        add(Models.box(L, 0.05, D, frameColor), 0, H - 0.025, 0)
-        add(Models.box(0.04, H - 0.1, D - 0.04, frameColor), 0, H / 2, 0)
-        for y in spec.levelHeights.dropFirst() {
-            add(Models.box(L - 0.06, 0.025, D - 0.04, isCold ? 0xC9D6DF : shelfColor), 0, y - 0.0125, 0.0)
+        if let frame = b.build() {
+            Models.setCategory(frame, Models.categoryNoHit)
+            node.addChildNode(frame)
         }
-        if isCold {
-            let strip = SCNNode(geometry: SCNBox(width: CGFloat(L - 0.1), height: 0.03, length: 0.03, chamferRadius: 0))
-            strip.geometry?.firstMaterial = Models.emissive(0xE8F8FF)
-            add(strip, 0, H - 0.08, D / 2 - 0.05)
-        }
-        // One merged mesh for the whole frame.
-        node.addChildNode(Models.merged(frame))
-        if isCold {
-            // Glass stays separate so it never blocks taps on the shelves behind it.
-            let glass = SCNNode(geometry: SCNBox(width: CGFloat(L - 0.06), height: CGFloat(H - 0.16), length: 0.015, chamferRadius: 0))
-            glass.geometry?.firstMaterial = Models.freshMat(spec.kind == .fridge ? 0xBFE6FF : 0xDDF3FF, alpha: 0.14)
+        if spec.kind != .shelf {
+            // Glass: faint tint with a couple of reflection streaks.
+            let glass = SCNNode(geometry: SCNPlane(width: CGFloat(L - 0.1), height: CGFloat(H - 0.32)))
+            let m = SCNMaterial()
+            m.diffuse.contents = Models.glassImage(tint: spec.kind == .fridge ? 0xBFE6FF : 0xE6F6FF)
+            m.lightingModel = .constant
+            m.isDoubleSided = true
+            m.writesToDepthBuffer = false
+            m.blendMode = .alpha
+            glass.geometry?.firstMaterial = m
             glass.categoryBitMask = Models.categoryNoHit
-            glass.position = SCNVector3(0, H / 2 + 0.03, D / 2 + 0.02)
+            glass.castsShadow = false
+            glass.renderingOrder = 20
+            glass.position = SCNVector3(0, H / 2, D / 2 + 0.022)
             node.addChildNode(glass)
         }
     }

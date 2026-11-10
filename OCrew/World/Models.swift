@@ -183,41 +183,99 @@ enum Models {
 
     private static var signImages: [String: UIImage] = [:]
 
-    static func signImage(_ text: String, lit: Bool) -> UIImage {
-        let key = text + (lit ? "|1" : "|0")
+    /// Largest font (down to `minSize`) at which `text` fits in `width`.
+    static func fit(_ text: String, width: CGFloat, start: CGFloat, minSize: CGFloat, weight: UIFont.Weight) -> UIFont {
+        var size = start
+        while size > minSize {
+            let w = (text as NSString).size(withAttributes: [.font: UIFont.systemFont(ofSize: size, weight: weight)]).width
+            if w <= width { break }
+            size -= 2
+        }
+        return UIFont.systemFont(ofSize: size, weight: weight)
+    }
+
+    /// Hanging aisle sign: section names with icons, plus a bar showing how much of the unit is stocked.
+    static func sectionSign(_ cats: [String], done: Int, total: Int, lit: Bool) -> UIImage {
+        let complete = total > 0 && done >= total
+        let key = "sign|" + cats.joined(separator: ",") + "|\(done)/\(total)|\(lit)"
         if let i = signImages[key] { return i }
-        let size = CGSize(width: max(360, CGFloat(text.count) * 34), height: 120)
-        let img = UIGraphicsImageRenderer(size: size).image { _ in
+        let size = CGSize(width: 512, height: 150)
+        let f = UIGraphicsImageRendererFormat(); f.scale = 1
+        let img = UIGraphicsImageRenderer(size: size, format: f).image { _ in
             let rect = CGRect(origin: .zero, size: size)
-            UIColor(hex: lit ? 0xFFD54A : 0x1B2631).setFill()
-            UIBezierPath(roundedRect: rect, cornerRadius: 22).fill()
-            UIColor(hex: lit ? 0xFFFFFF : 0x4A5A6A).setStroke()
-            let border = UIBezierPath(roundedRect: rect.insetBy(dx: 5, dy: 5), cornerRadius: 18)
-            border.lineWidth = 6
+            let bg: UInt32 = lit ? 0xFFD54A : (complete ? 0x1E8449 : 0x16202B)
+            let ink: UIColor = lit ? UIColor(hex: 0x16202B) : .white
+            UIColor(hex: bg).setFill()
+            UIBezierPath(roundedRect: rect, cornerRadius: 26).fill()
+            UIColor(white: 1, alpha: lit ? 0.9 : 0.22).setStroke()
+            let border = UIBezierPath(roundedRect: rect.insetBy(dx: 5, dy: 5), cornerRadius: 21)
+            border.lineWidth = 5
             border.stroke()
             let para = NSMutableParagraphStyle(); para.alignment = .center
-            let attrs: [NSAttributedString.Key: Any] = [
-                .font: UIFont.systemFont(ofSize: 60, weight: .black),
-                .foregroundColor: lit ? UIColor(hex: 0x1B2631) : UIColor.white, .paragraphStyle: para]
-            (text as NSString).draw(in: CGRect(x: 10, y: 24, width: size.width - 20, height: 80), withAttributes: attrs)
+            // One line per section when there are several, so nothing is ever cut off.
+            let lines = cats.map { "\(SectionStyle.icon($0)) \($0.uppercased())" }
+            let lineH: CGFloat = lines.count == 1 ? 70 : (lines.count == 2 ? 48 : 34)
+            let top = (108 - lineH * CGFloat(lines.count)) / 2 + 6
+            for (i, line) in lines.prefix(3).enumerated() {
+                let font = fit(line, width: 470, start: lineH * 0.82, minSize: 18, weight: .black)
+                let y = top + CGFloat(i) * lineH + (lineH - font.lineHeight) / 2
+                (line as NSString).draw(in: CGRect(x: 20, y: y, width: 472, height: font.lineHeight + 2),
+                                        withAttributes: [.font: font, .foregroundColor: ink, .paragraphStyle: para])
+            }
+            // Stock bar
+            let track = CGRect(x: 34, y: 118, width: 444, height: 14)
+            UIColor(white: lit ? 0 : 1, alpha: 0.22).setFill()
+            UIBezierPath(roundedRect: track, cornerRadius: 7).fill()
+            if total > 0 && done > 0 {
+                let w = max(14, track.width * CGFloat(done) / CGFloat(total))
+                UIColor(hex: lit ? 0x16202B : (complete ? 0xFFFFFF : 0x58D68D)).setFill()
+                UIBezierPath(roundedRect: CGRect(x: track.minX, y: track.minY, width: w, height: 14), cornerRadius: 7).fill()
+            }
         }
         signImages[key] = img
         return img
     }
 
-    static func rowLabelImage(_ text: String, lit: Bool) -> UIImage {
-        let key = "row|" + text + (lit ? "|1" : "|0")
+    /// The strip on a shelf edge naming its section, color-coded per section.
+    static func rowLabelImage(_ cat: String?, lit: Bool) -> UIImage {
+        let key = "row|" + (cat ?? "-") + (lit ? "|1" : "|0")
         if let i = signImages[key] { return i }
-        let size = CGSize(width: 768, height: 44)
-        let img = UIGraphicsImageRenderer(size: size).image { _ in
-            UIColor(hex: lit ? 0xFFD54A : 0xF7F7F2).setFill()
+        let size = CGSize(width: 768, height: 48)
+        let f = UIGraphicsImageRendererFormat(); f.scale = 1; f.opaque = true
+        let img = UIGraphicsImageRenderer(size: size, format: f).image { _ in
+            let base: UInt32 = cat.map { SectionStyle.color($0) } ?? 0x7F8C8D
+            UIColor(hex: lit ? 0xFFD54A : base).setFill()
             UIRectFill(CGRect(origin: .zero, size: size))
-            UIColor(hex: 0x1B2631).setFill()
-            UIRectFill(CGRect(x: 0, y: 0, width: 768, height: 4))
+            UIColor(white: 0, alpha: 0.18).setFill()
+            UIRectFill(CGRect(x: 0, y: 43, width: 768, height: 5))
+            guard let cat = cat else { return }
             let para = NSMutableParagraphStyle(); para.alignment = .center
-            (text.uppercased() as NSString).draw(in: CGRect(x: 0, y: 6, width: 768, height: 36), withAttributes: [
-                .font: UIFont.systemFont(ofSize: 28, weight: .heavy), .foregroundColor: UIColor(hex: 0x1B2631),
-                .paragraphStyle: para, .kern: 4])
+            let text = "\(SectionStyle.icon(cat))  \(cat.uppercased())"
+            (text as NSString).draw(in: CGRect(x: 0, y: 5, width: 768, height: 40), withAttributes: [
+                .font: UIFont.systemFont(ofSize: 30, weight: .heavy),
+                .foregroundColor: lit ? UIColor(hex: 0x16202B) : UIColor.white,
+                .paragraphStyle: para, .kern: 3])
+        }
+        signImages[key] = img
+        return img
+    }
+
+    /// Cooler door glass: a faint tint with diagonal reflection streaks.
+    static func glassImage(tint: UInt32) -> UIImage {
+        let key = "glass|\(tint)"
+        if let i = signImages[key] { return i }
+        let size = CGSize(width: 256, height: 256)
+        let f = UIGraphicsImageRendererFormat(); f.scale = 1
+        let img = UIGraphicsImageRenderer(size: size, format: f).image { ctx in
+            let c = ctx.cgContext
+            c.setFillColor(UIColor(hex: tint, alpha: 0.07).cgColor)
+            c.fill(CGRect(origin: .zero, size: size))
+            c.setFillColor(UIColor(white: 1, alpha: 0.10).cgColor)
+            for (x, w) in [(CGFloat(30), CGFloat(26)), (CGFloat(78), CGFloat(10)), (CGFloat(170), CGFloat(18))] {
+                c.move(to: CGPoint(x: x, y: 256)); c.addLine(to: CGPoint(x: x + w, y: 256))
+                c.addLine(to: CGPoint(x: x + w + 90, y: 0)); c.addLine(to: CGPoint(x: x + 90, y: 0))
+                c.closePath(); c.fillPath()
+            }
         }
         signImages[key] = img
         return img

@@ -242,6 +242,11 @@ final class HUDView: UIView {
     let timerLabel = UILabel()
     let levelLabel = UILabel()
     let remainingLabel = UILabel()
+    let scoreLabel = UILabel()
+    let comboLabel = PillLabel()
+    let comboBar = UIView()
+    private var floaters: [UILabel] = []
+    private var nextFloater = 0
     let infoPanel = UIView()
     let progressTrack = UIView()
     let progressFill = UIView()
@@ -258,6 +263,7 @@ final class HUDView: UIView {
 
     private var settings = DisplaySettings()
     private var progressValue: CGFloat = 0
+    private var comboValue: CGFloat = 0
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -269,9 +275,28 @@ final class HUDView: UIView {
         infoPanel.layer.cornerRadius = 14
         infoPanel.isUserInteractionEnabled = false
         addSubview(infoPanel)
-        for l in [timerLabel, levelLabel, remainingLabel] {
+        for l in [timerLabel, levelLabel, remainingLabel, scoreLabel] {
             l.textColor = .white
             infoPanel.addSubview(l)
+        }
+        scoreLabel.textColor = UIColor(hex: 0xFFD54A)
+        comboLabel.textColor = .white
+        comboLabel.textAlignment = .center
+        comboLabel.isHidden = true
+        comboLabel.insets = UIEdgeInsets(top: 4, left: 12, bottom: 7, right: 12)
+        addSubview(comboLabel)
+        comboBar.backgroundColor = UIColor(white: 1, alpha: 0.9)
+        comboBar.layer.cornerRadius = 1.5
+        comboLabel.addSubview(comboBar)
+        for _ in 0..<4 {
+            let f = UILabel()
+            f.textAlignment = .center
+            f.alpha = 0
+            f.isUserInteractionEnabled = false
+            f.shadowColor = UIColor(white: 0, alpha: 0.8)
+            f.shadowOffset = CGSize(width: 0, height: 1)
+            addSubview(f)
+            floaters.append(f)
         }
         progressTrack.backgroundColor = UIColor(white: 1, alpha: 0.18)
         progressTrack.layer.cornerRadius = 4
@@ -326,6 +351,11 @@ final class HUDView: UIView {
         timerLabel.font = .monospacedDigitSystemFont(ofSize: 24 * ts, weight: .heavy)
         levelLabel.font = .systemFont(ofSize: 11 * ts, weight: .semibold)
         remainingLabel.font = .systemFont(ofSize: 13 * ts, weight: .bold)
+        scoreLabel.font = .monospacedDigitSystemFont(ofSize: 13 * ts, weight: .heavy)
+        scoreLabel.isHidden = !d.showScore
+        comboLabel.font = .systemFont(ofSize: 15 * ts, weight: .black)
+        comboLabel.backgroundColor = UIColor(hex: Theme.brand, alpha: 0.92)
+        for f in floaters { f.font = .systemFont(ofSize: 17 * ts, weight: .black) }
         levelLabel.textColor = UIColor(white: 1, alpha: 0.75)
         promptLabel.font = .systemFont(ofSize: 14 * ts, weight: .semibold)
         toastLabel.font = .systemFont(ofSize: 14 * ts, weight: .semibold)
@@ -364,17 +394,19 @@ final class HUDView: UIView {
         let top = max(inset.top, 8) + 6
 
         // Info panel (timer, level, remaining) — top-left, or top-right when left-handed
-        timerLabel.sizeToFit(); levelLabel.sizeToFit(); remainingLabel.sizeToFit()
-        let panelW = max(timerLabel.bounds.width, levelLabel.bounds.width, remainingLabel.bounds.width) + 24
+        timerLabel.sizeToFit(); levelLabel.sizeToFit(); remainingLabel.sizeToFit(); scoreLabel.sizeToFit()
+        let panelW = max(timerLabel.bounds.width, levelLabel.bounds.width, remainingLabel.bounds.width, scoreLabel.bounds.width) + 24
         var h: CGFloat = 8 + levelLabel.bounds.height
         if !timerLabel.isHidden { h += timerLabel.bounds.height }
         if !remainingLabel.isHidden { h += remainingLabel.bounds.height }
+        if !scoreLabel.isHidden { h += scoreLabel.bounds.height + 1 }
         h += 8
         infoPanel.frame = CGRect(x: d.leftHanded ? right - panelW - 50 * hs : left, y: top, width: panelW, height: h)
         var y: CGFloat = 6
         levelLabel.frame.origin = CGPoint(x: 12, y: y); y += levelLabel.bounds.height
         if !timerLabel.isHidden { timerLabel.frame.origin = CGPoint(x: 12, y: y); y += timerLabel.bounds.height }
-        remainingLabel.frame.origin = CGPoint(x: 12, y: y)
+        if !remainingLabel.isHidden { remainingLabel.frame.origin = CGPoint(x: 12, y: y); y += remainingLabel.bounds.height + 1 }
+        scoreLabel.frame.origin = CGPoint(x: 12, y: y)
         fpsLabel.sizeToFit()
         fpsLabel.frame.origin = CGPoint(x: infoPanel.frame.minX + 4, y: infoPanel.frame.maxY + 4)
 
@@ -385,6 +417,13 @@ final class HUDView: UIView {
         let pw = min(bounds.width * 0.32, 300)
         progressTrack.frame = CGRect(x: bounds.midX - pw / 2, y: top + 6, width: pw, height: 8)
         progressFill.frame = CGRect(x: 0, y: 0, width: max(8, pw * progressValue), height: 8)
+
+        // Combo pill beside the progress bar
+        let comboSize = comboLabel.sizeThatFits(CGSize(width: 240, height: 60))
+        let comboX = d.leftHanded ? progressTrack.frame.minX - comboSize.width - 14 : progressTrack.frame.maxX + 14
+        comboLabel.frame = CGRect(x: comboX, y: top - 3, width: comboSize.width, height: comboSize.height)
+        comboLabel.layer.cornerRadius = comboSize.height / 2
+        comboBar.frame = CGRect(x: 12, y: comboSize.height - 6, width: (comboSize.width - 24) * comboValue, height: 3)
 
         // Tip + toast under the progress bar
         let maxW = min(bounds.width * 0.5, 460)
@@ -485,5 +524,38 @@ final class HUDView: UIView {
             let pw = progressTrack.bounds.width
             progressFill.frame = CGRect(x: 0, y: 0, width: max(8, pw * p), height: 8)
         }
+    }
+
+    /// Score line and the combo pill (hidden below x2).
+    func setScore(_ score: Int, streak: Int, multiplier: Int, comboLeft: Double) {
+        let text = "\(score.formatted()) pts"
+        if scoreLabel.text != text { scoreLabel.text = text; setNeedsLayout() }
+        let show = settings.showScore && streak >= 2
+        if comboLabel.isHidden == show { comboLabel.isHidden = !show; setNeedsLayout() }
+        guard show else { return }
+        let label = multiplier > 1 ? "x\(multiplier)  ·  \(streak) in a row" : "\(streak) in a row"
+        if comboLabel.text != label { comboLabel.text = label; setNeedsLayout() }
+        comboValue = CGFloat(max(0, min(1, comboLeft)))
+        comboBar.frame.size.width = max(0, (comboLabel.bounds.width - 24) * comboValue)
+    }
+
+    /// A little "+30" that floats up from the crosshair.
+    func floatPoints(_ points: Int, multiplier: Int) {
+        guard settings.showScore, !floaters.isEmpty else { return }
+        let f = floaters[nextFloater % floaters.count]
+        nextFloater += 1
+        f.text = "+\(points)"
+        f.textColor = multiplier >= 3 ? UIColor(hex: 0xFFD54A) : .white
+        f.sizeToFit()
+        let jitter = CGFloat((nextFloater * 37) % 50) - 25
+        f.center = CGPoint(x: bounds.midX + 34 + jitter, y: bounds.midY - 18)
+        f.layer.removeAllAnimations()
+        f.alpha = 1
+        f.transform = CGAffineTransform(scaleX: 0.8, y: 0.8)
+        UIView.animate(withDuration: 0.7, delay: 0, options: [.curveEaseOut, .allowUserInteraction], animations: {
+            f.center.y -= 46
+            f.alpha = 0
+            f.transform = .identity
+        })
     }
 }

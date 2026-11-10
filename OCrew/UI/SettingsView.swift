@@ -45,6 +45,7 @@ struct SettingsView: View {
         }
         Section2("HUD elements") {
             ToggleRow(title: "Timer", isOn: $store.display.showTimer)
+            ToggleRow(title: "Score, combo and points", isOn: $store.display.showScore)
             ToggleRow(title: "Items-left counter", isOn: $store.display.showRemaining)
             ToggleRow(title: "Progress bar", isOn: $store.display.showProgressBar)
             ToggleRow(title: "Counts on basket items", isOn: $store.display.basketCounts)
@@ -73,6 +74,10 @@ struct SettingsView: View {
             ToggleRow(title: "Show arms & basket", isOn: $store.display.showArms)
             SliderRow(title: "Camera smoothing", value: $store.display.cameraSmoothing, range: 0...0.8, format: pct)
             PickerRow(title: "Frame rate", selection: $store.display.frameRate, options: FrameRateCap.allCases.map { ($0, $0.label) })
+        }
+        Section2("Picture") {
+            PickerRow(title: "Edge smoothing", selection: $store.display.antialiasing, options: Antialiasing.allCases.map { ($0, $0.label) })
+            ToggleRow(title: "Shadows (applies next level)", isOn: $store.display.shadows)
         }
         resetButton("Reset display & controls") { store.resetDisplay() }
     }
@@ -137,6 +142,7 @@ struct SettingsView: View {
             ToggleRow(title: "Haptics", isOn: $store.display.haptics)
         }
         Section2("Audio") {
+            SliderRow(title: "Music", value: $store.display.musicVolume, range: 0...1, format: pct)
             SliderRow(title: "Sound effects", value: $store.display.sfxVolume, range: 0...1, format: pct)
             ToggleRow(title: "Footsteps", isOn: $store.display.footsteps)
         }

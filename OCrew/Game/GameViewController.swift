@@ -28,6 +28,7 @@ final class GameViewController: UIViewController {
     private var hitFrame = 0
     private var lastPromptFocus: Target?
     private var lastSave: Double = 0
+    private var reportedTime: Double = 0
 
     init(level: OrgLevel) {
         self.level = level
@@ -63,7 +64,8 @@ final class GameViewController: UIViewController {
         title.textColor = .white
         title.textAlignment = .center
         let sub = UILabel()
-        sub.text = "Knocking everything off the shelves…"
+        sub.text = ["Knocking everything off the shelves…", "Tipping over the displays…", "Scattering the stock…",
+                    "Making a proper mess…"].randomElement() ?? ""
         sub.font = .systemFont(ofSize: 15, weight: .medium)
         sub.textColor = UIColor(hex: Theme.dim)
         sub.textAlignment = .center
@@ -102,7 +104,6 @@ final class GameViewController: UIViewController {
         // Render at 2x instead of the phone's native 3x and with lighter anti-aliasing:
         // ~2.25x fewer pixels for the GPU, and the difference is hard to see on a phone.
         scnView.contentScaleFactor = min(2, UIScreen.main.scale)
-        scnView.antialiasingMode = .multisampling2X
         scnView.rendersContinuously = metalView == nil
         if metalView == nil { view.addSubview(scnView) }
 
@@ -125,6 +126,7 @@ final class GameViewController: UIViewController {
 
         world.onToast = { [weak self] text, style in self?.hud.showToast(text, style: style) }
         world.onBasketChanged = { [weak self] in self?.refreshBasket() }
+        world.onPoints = { [weak self] points, mult in self?.hud.floatPoints(points, multiplier: mult) }
         world.onComplete = { [weak self] r in self?.showComplete(r) }
 
         applySettings(SettingsStore.shared.display)
@@ -134,7 +136,11 @@ final class GameViewController: UIViewController {
             .sink { [weak self] d in self?.applySettings(d) }
             .store(in: &cancellables)
         NotificationCenter.default.publisher(for: UIApplication.willResignActiveNotification)
-            .sink { [weak self] _ in self?.world.snapshot() }
+            .sink { [weak self] _ in
+                // Leaving the app (or pulling down notifications) pauses instead of letting the clock run.
+                guard let self = self, self.world != nil else { return }
+                if !self.overlayOpen && !self.world.completed && !DebugShot.active { self.openPause() } else { self.world.snapshot() }
+            }
             .store(in: &cancellables)
 
         refreshBasket()
@@ -175,6 +181,12 @@ final class GameViewController: UIViewController {
     private func applySettings(_ d: DisplaySettings) {
         hud.apply(d)
         controls.apply(d)
+        metalView?.sampleCount = d.antialiasing.rawValue
+        switch d.antialiasing {
+        case .off: scnView.antialiasingMode = .none
+        case .x2: scnView.antialiasingMode = .multisampling2X
+        case .x4: scnView.antialiasingMode = .multisampling4X
+        }
         scnView.showsStatistics = d.perfStats && metalView == nil
         world?.refreshSigns()
         world?.refreshTags()
@@ -225,6 +237,7 @@ final class GameViewController: UIViewController {
         hud.setStatus(level: "\(level.title) · \(level.stageName)", time: world.timeString(),
                       frozen: world.skills.isActive(.freeze, now: world.time),
                       remaining: rem, progress: world.total > 0 ? 1 - Double(rem) / Double(world.total) : 1)
+        hud.setScore(world.score, streak: world.streak, multiplier: world.multiplier, comboLeft: world.comboFraction)
         hitFrame += 1
         if hitFrame % 2 == 0 || focus != lastPromptFocus {
             lastPromptFocus = focus
@@ -296,6 +309,7 @@ final class GameViewController: UIViewController {
     private func presentOverlay<V: View>(_ content: V) {
         overlayOpen = true
         world.paused = true
+        Feedback.shared.duckMusic(true)
         interactHeld = false
         controls.reset()
         let host = UIHostingController(rootView: content)
@@ -313,6 +327,7 @@ final class GameViewController: UIViewController {
             } else {
                 self.overlayOpen = false
                 self.world.paused = false
+                Feedback.shared.duckMusic(false)
                 self.lastTimestamp = 0
             }
         }
@@ -391,7 +406,12 @@ final class GameViewController: UIViewController {
     /// Stops the render loop (also called when SwiftUI removes the game).
     func shutdown() {
         stopLoop()
+        if let w = world, w.time > reportedTime {
+            ProgressStore.shared.addPlayTime(w.time - reportedTime)
+            reportedTime = w.time
+        }
         world?.paused = true
+        Feedback.shared.duckMusic(false)
         cancellables.removeAll()
     }
 }

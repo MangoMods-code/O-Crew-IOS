@@ -41,6 +41,6 @@ struct RootView: View {
                 }
             }
         }
-        .onAppear { _ = Feedback.shared }
+        .onAppear { Feedback.shared.startMusic() }
     }
 }

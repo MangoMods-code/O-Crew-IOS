@@ -24,6 +24,8 @@ extension GameWorld {
             }
         }
         rebuildChunks()
+        for cat in Set(fixtures.flatMap { $0.slots }.compactMap { $0.category }) where sectionDone(cat) { completedSections.insert(cat) }
+        refreshSigns()
     }
 
     func debugLook(x: Float, z: Float, yaw y: Float, pitch p: Float) {

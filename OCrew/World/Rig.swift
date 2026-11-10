@@ -104,12 +104,12 @@ final class FirstPersonRig {
     private var sway = SIMD2<Float>(0, 0)
     private var restRight = simd_quatf(angle: 0, axis: SIMD3<Float>(0, 1, 0))
 
-    init(sleeve: UInt32, skin: UInt32) {
+    init(sleeve: UInt32, glove gloveColor: UInt32) {
         let sleeveMat = SCNMaterial()
         sleeveMat.diffuse.contents = UIColor(hex: sleeve)
         sleeveMat.lightingModel = .lambert
         let glove = SCNMaterial()
-        glove.diffuse.contents = UIColor(hex: 0x2E3B48)
+        glove.diffuse.contents = UIColor(hex: gloveColor)
         glove.specular.contents = UIColor(white: 0.22, alpha: 1)
         glove.shininess = 0.3
         glove.lightingModel = .blinn
@@ -148,19 +148,25 @@ final class FirstPersonRig {
         // The handle sits under the palm where the fingers close; the basket hangs level below it.
         basketHolder.simdPosition = SIMD3(0, -0.03, -0.075)
         basketHolder.simdOrientation = handRot.inverse
-        basketHolder.scale = SCNVector3(0.72, 0.72, 0.72)
+        basketHolder.scale = SCNVector3(0.78, 0.78, 0.78)
         leftHand.root.addChildNode(basketHolder)
         root.addChildNode(leftArm)
 
         Models.setCategory(root, 2)
+        setShadows(root)
+    }
+
+    private func setShadows(_ n: SCNNode) {
+        n.castsShadow = false
+        for c in n.childNodes { setShadows(c) }
     }
 
     private static func buildForearm(into arm: SCNNode, elbow: SIMD3<Float>, wrist: SIMD3<Float>,
                                      sleeve: SCNMaterial, cuff: SCNMaterial) {
         let dir = simd_normalize(wrist - elbow)
         // Long uniform sleeve right down to a glove cuff at the wrist.
-        arm.addChildNode(limb(from: elbow - dir * 0.15, to: elbow + (wrist - elbow) * 0.45, radius: 0.043, mat: sleeve))
-        arm.addChildNode(limb(from: elbow + (wrist - elbow) * 0.4, to: wrist - dir * 0.03, radius: 0.037, mat: sleeve))
+        arm.addChildNode(limb(from: elbow - dir * 0.15, to: elbow + (wrist - elbow) * 0.45, radius: 0.037, mat: sleeve))
+        arm.addChildNode(limb(from: elbow + (wrist - elbow) * 0.4, to: wrist - dir * 0.03, radius: 0.033, mat: sleeve))
         arm.addChildNode(limb(from: wrist - dir * 0.035, to: wrist + dir * 0.005, radius: 0.032, mat: cuff))
     }
 
@@ -192,7 +198,7 @@ final class FirstPersonRig {
         root.simdPosition = SIMD3(bobX + sway.x * 0.05, bobY + breathe + sway.y * 0.04, 0)
         // Arms belong to the body, not the eyes: they only partly follow when you look up/down,
         // so looking down brings the basket into view and looking ahead keeps it low.
-        root.simdEulerAngles = SIMD3(sway.y * 0.06 - pitch * 0.45, sway.x * 0.08, -bobX * 1.1)
+        root.simdEulerAngles = SIMD3(sway.y * 0.06 - pitch * 0.34, sway.x * 0.08, -bobX * 1.1)
 
         // Arms swing a little with each step, opposite to each other.
         leftArm.simdEulerAngles = SIMD3(sin(bobPhase * 2) * 0.025 * walk, 0, sin(bobPhase) * 0.02 * walk)

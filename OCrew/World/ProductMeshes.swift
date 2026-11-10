@@ -244,6 +244,8 @@ final class ProductMesh {
         func m(_ contents: Any, shine: CGFloat) -> SCNMaterial {
             let mat = SCNMaterial()
             mat.diffuse.contents = contents
+            mat.diffuse.mipFilter = .linear
+            mat.diffuse.maxAnisotropy = 4
             mat.lightingModel = .blinn
             mat.specular.contents = UIColor(white: shine, alpha: 1)
             mat.shininess = 0.35

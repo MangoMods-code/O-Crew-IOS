@@ -49,28 +49,41 @@ struct MainMenuView: View {
     @ObservedObject private var progress = ProgressStore.shared
     @State private var page: Page = MainMenuView.initialPage
 
-    enum Page { case home, stores, settings, help }
+    enum Page { case home, stores, settings, help, locker }
 
     private static var initialPage: Page {
         switch DebugShot.screen {
         case "levels": return .stores
         case "settings": return .settings
         case "help": return .help
+        case "locker": return .locker
         default: return .home
         }
     }
 
     var body: some View {
         ZStack {
-            MenuBackground()
+            StoreBackdrop().ignoresSafeArea()
+            // Darken the aisle so the menu reads clearly on top of it.
+            LinearGradient(colors: [Color.black.opacity(page == .home ? 0.78 : 0.86), Color.black.opacity(page == .home ? 0.5 : 0.8)],
+                           startPoint: .leading, endPoint: .trailing)
+                .ignoresSafeArea()
+            RadialGradient(colors: [Color(hex: Theme.brand, opacity: 0.22), .clear], center: .topLeading, startRadius: 10, endRadius: 480)
+                .ignoresSafeArea()
             switch page {
             case .home: home
-            case .stores: StoreSelectView(onPlay: onPlay, onBack: { page = .home })
-            case .settings: SettingsView(inGame: false, onClose: { page = .home })
-            case .help: HowToPlayView(onClose: { page = .home })
+            case .stores: StoreSelectView(onPlay: onPlay, onBack: { go(.home) })
+            case .settings: SettingsView(inGame: false, onClose: { go(.home) })
+            case .help: HowToPlayView(onClose: { go(.home) })
+            case .locker: LockerView(onBack: { go(.home) })
             }
         }
         .preferredColorScheme(.dark)
+    }
+
+    private func go(_ p: Page) {
+        Feedback.shared.play(.click, volume: 0.6)
+        withAnimation(.easeOut(duration: 0.18)) { page = p }
     }
 
     /// The level to offer under "Continue": a saved one, or the next unplayed.
@@ -86,15 +99,15 @@ struct MainMenuView: View {
         HStack(spacing: 40) {
             VStack(alignment: .leading, spacing: 12) {
                 Logo(size: 78)
-                Text("The store's a wreck. Every item back where it belongs — as fast as you can.")
+                Text("The store's a wreck. Put every item back where it belongs, as fast as you can.")
                     .font(.system(size: 16, weight: .medium))
-                    .foregroundColor(Color(hex: Theme.dim))
+                    .foregroundColor(Color.white.opacity(0.78))
                     .frame(maxWidth: 360, alignment: .leading)
                 HStack(spacing: 6) {
                     Image(systemName: "star.fill").foregroundColor(Color(hex: 0xF4D03F))
                     Text("\(progress.totalStars) / \(Levels.all.count * 3) stars").font(.system(size: 14, weight: .bold))
                     Text("·  \(min(progress.data.unlocked, Levels.all.count)) of \(Levels.all.count) levels unlocked")
-                        .font(.system(size: 14)).foregroundColor(Color(hex: Theme.dim))
+                        .font(.system(size: 14)).foregroundColor(Color.white.opacity(0.7))
                 }
             }
             VStack(spacing: 10) {
@@ -108,15 +121,99 @@ struct MainMenuView: View {
                     }
                     .buttonStyle(BrandButtonStyle())
                 }
-                Button { page = .stores } label: { Label("Levels", systemImage: "square.grid.3x3.fill").frame(width: 250) }
+                Button { go(.stores) } label: { Label("Levels", systemImage: "square.grid.3x3.fill").frame(width: 250) }
+                    .buttonStyle(BrandButtonStyle(filled: continueLevel == nil))
+                Button { go(.locker) } label: { Label("Locker & stats", systemImage: "tshirt.fill").frame(width: 250) }
                     .buttonStyle(BrandButtonStyle(filled: false))
-                Button { page = .help } label: { Label("How to play", systemImage: "questionmark.circle.fill").frame(width: 250) }
-                    .buttonStyle(BrandButtonStyle(filled: false))
-                Button { page = .settings } label: { Label("Settings", systemImage: "gearshape.fill").frame(width: 250) }
-                    .buttonStyle(BrandButtonStyle(filled: false))
+                HStack(spacing: 10) {
+                    Button { go(.help) } label: { Label("How to play", systemImage: "questionmark.circle.fill").frame(width: 106) }
+                        .buttonStyle(BrandButtonStyle(filled: false))
+                    Button { go(.settings) } label: { Label("Settings", systemImage: "gearshape.fill").frame(width: 106) }
+                        .buttonStyle(BrandButtonStyle(filled: false))
+                }
             }
         }
         .padding(30)
+    }
+}
+
+/// Glove and basket colors (unlocked with stars) plus lifetime stats.
+@MainActor
+struct LockerView: View {
+    let onBack: () -> Void
+    @ObservedObject private var progress = ProgressStore.shared
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Button(action: onBack) { Label("Back", systemImage: "chevron.left") }
+                    .buttonStyle(BrandButtonStyle(filled: false))
+                Text("Locker").font(.system(size: 26, weight: .heavy)).padding(.leading, 8)
+                Spacer()
+                Image(systemName: "star.fill").foregroundColor(Color(hex: 0xF4D03F))
+                Text("\(progress.totalStars) stars").font(.system(size: 16, weight: .heavy))
+            }
+            ScrollView {
+                VStack(alignment: .leading, spacing: 14) {
+                    row("Gloves", items: Cosmetics.gloves, selected: progress.data.glove) { progress.setLook(glove: $0) }
+                    row("Basket", items: Cosmetics.baskets, selected: progress.data.basket) { progress.setLook(basket: $0) }
+                    Text("LIFETIME").font(.system(size: 11, weight: .heavy)).foregroundColor(Color(hex: Theme.brand))
+                    HStack(spacing: 8) {
+                        StatTile(label: "Items sorted", value: progress.data.itemsSorted.formatted())
+                        StatTile(label: "Levels finished", value: "\(progress.data.levelsFinished)")
+                        StatTile(label: "Best combo", value: "\(progress.data.bestCombo)")
+                        StatTile(label: "Time on shift", value: timeText(progress.data.secondsPlayed))
+                    }
+                }
+                .padding(.bottom, 12)
+            }
+        }
+        .padding(.horizontal, 30)
+        .padding(.vertical, 16)
+    }
+
+    private func timeText(_ s: Double) -> String {
+        let m = Int(s) / 60
+        return m >= 60 ? "\(m / 60)h \(m % 60)m" : "\(m)m"
+    }
+
+    private func row(_ title: String, items: [Cosmetic], selected: Int, pick: @escaping (Int) -> Void) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(title.uppercased()).font(.system(size: 11, weight: .heavy)).foregroundColor(Color(hex: Theme.brand))
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 10) {
+                    ForEach(items) { c in
+                        let unlocked = progress.totalStars >= c.stars
+                        Button {
+                            guard unlocked else { return }
+                            Feedback.shared.play(.click, volume: 0.6)
+                            pick(c.id)
+                        } label: {
+                            VStack(spacing: 5) {
+                                ZStack {
+                                    RoundedRectangle(cornerRadius: 14).fill(Color(hex: c.color)).frame(width: 78, height: 54)
+                                    if !unlocked {
+                                        RoundedRectangle(cornerRadius: 14).fill(Color.black.opacity(0.55)).frame(width: 78, height: 54)
+                                        Image(systemName: "lock.fill").foregroundColor(.white)
+                                    } else if selected == c.id {
+                                        Image(systemName: "checkmark.circle.fill").font(.system(size: 22, weight: .bold))
+                                            .foregroundColor(.white).shadow(radius: 3)
+                                    }
+                                }
+                                Text(c.name).font(.system(size: 11, weight: .bold)).lineLimit(1)
+                                Text(unlocked ? (selected == c.id ? "Wearing" : "Unlocked") : "\(c.stars)★")
+                                    .font(.system(size: 10, weight: .semibold)).foregroundColor(Color(hex: Theme.dim))
+                            }
+                            .frame(width: 90)
+                            .padding(.vertical, 8)
+                            .background(RoundedRectangle(cornerRadius: 16).fill(Color(hex: Theme.panel).opacity(0.9)))
+                            .overlay(RoundedRectangle(cornerRadius: 16).stroke(selected == c.id ? Color(hex: Theme.brand) : Color.white.opacity(0.08), lineWidth: 2))
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -197,7 +294,9 @@ struct StoreSelectView: View {
         if saved { return "In progress — tap to continue" }
         if let t = progress.bestTime(lvl.id) {
             let v = Int(t)
-            return String(format: "Best %d:%02d", v / 60, v % 60)
+            let time = String(format: "Best %d:%02d", v / 60, v % 60)
+            if let sc = progress.bestScore(lvl.id) { return "\(time) · \(sc.formatted()) pts" }
+            return time
         }
         return lvl.twists.isEmpty ? "\(lvl.products.count) kinds of products" : lvl.twists.joined(separator: " · ")
     }
@@ -210,13 +309,14 @@ struct HowToPlayView: View {
     private let sections: [(String, String, String)] = [
         ("figure.walk", "Move & look", "Left thumb moves you (floating stick: put your thumb down anywhere on that side). Drag on the other side to look. Swap sides in Settings → Controls."),
         ("basket.fill", "Grab the mess", "Look at an item on the floor and tap it (or press the hand button) to drop it in your basket. Hold the hand button to keep grabbing. Your basket has limited space."),
-        ("signpost.right.fill", "Read the signs", "Signs above each shelf and labels on every shelf row tell you what section it is. Work out where each item belongs. There are no outlines to help you."),
-        ("square.grid.3x3.fill", "Stock it right", "Look at a shelf spot and tap to place. Each spot holds one kind of product, and identical items go together. Cold things go in fridges, frozen things in freezers."),
-        ("hand.tap.fill", "Choose what to place", "Tap an item in the basket bar at the bottom to pick what goes next. Looking at a spot that already has that product picks it automatically."),
+        ("signpost.right.fill", "Read the signs", "Hanging signs and the color-coded strip on every shelf edge name the section. Work out where each item belongs; there are no outlines to help you."),
+        ("square.grid.3x3.fill", "Stock it right", "Look at a shelf spot and tap to place. Each spot holds one kind of product and identical items go together. Cold things go in fridges, frozen things in freezers."),
+        ("flame.fill", "Combos & score", "Place items back to back to build a combo: every 4 in a row raises your multiplier, up to x5. Filling a spot, finishing a section and a fast, mistake-free level all pay bonuses."),
+        ("checkmark.seal.fill", "Fill every shelf", "The bar on each hanging sign shows how full that unit is, and it turns green when done. The level ends when every shelf is fully stocked."),
         ("arrow.down.to.line", "Fix mistakes", "Drop takes one item off the shelf you're looking at, or drops your selected item on the floor. Later levels start with things on the wrong shelves."),
         ("trash.fill", "Expired stock", "Items with a red sticker and faded packaging are expired. Take them to the trash bin by the door."),
         ("wand.and.stars", "Skills", "Sprint, Magnet, Scanner, Auto-Sort and Time Freeze each have a cooldown. Scanner lights up the signs where your selected item belongs."),
-        ("star.fill", "Stars", "The level ends when every item is in its right section. Beat the 3★ time for full stars. Finishing unlocks the next level."),
+        ("tshirt.fill", "Stars & locker", "Beat the 3★ time for full stars. Stars unlock new glove and basket colors in the Locker."),
     ]
 
     var body: some View {

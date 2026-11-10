@@ -47,12 +47,22 @@ final class MetalSceneView: UIView {
         metalLayer.drawableSize = CGSize(width: bounds.width * scale, height: bounds.height * scale)
     }
 
-    private func ensureDepth(_ size: CGSize) {
-        guard size != lastSize || depthTexture == nil, size.width > 0, size.height > 0 else { return }
+    /// 1 = off, 2 or 4 = multisampled edges.
+    var sampleCount = 4
+    private var msaaTexture: MTLTexture?
+    private var builtSamples = 0
+
+    private func ensureTargets(_ size: CGSize) {
+        guard size.width > 0, size.height > 0 else { return }
+        if size == lastSize && depthTexture != nil && builtSamples == sampleCount { return }
         lastSize = size
+        builtSamples = sampleCount
+        var samples = sampleCount
+        while samples > 1 && !device.supportsTextureSampleCount(samples) { samples /= 2 }
         let d = MTLTextureDescriptor.texture2DDescriptor(pixelFormat: .depth32Float_stencil8,
                                                          width: Int(size.width), height: Int(size.height), mipmapped: false)
         d.usage = .renderTarget
+        if samples > 1 { d.textureType = .type2DMultisample; d.sampleCount = samples }
         #if targetEnvironment(simulator)
         d.storageMode = .private
         #else
@@ -63,17 +73,41 @@ final class MetalSceneView: UIView {
             d.storageMode = .private
             depthTexture = device.makeTexture(descriptor: d)
         }
+        msaaTexture = nil
+        if samples > 1 {
+            let c = MTLTextureDescriptor.texture2DDescriptor(pixelFormat: metalLayer.pixelFormat,
+                                                             width: Int(size.width), height: Int(size.height), mipmapped: false)
+            c.usage = .renderTarget
+            c.textureType = .type2DMultisample
+            c.sampleCount = samples
+            #if targetEnvironment(simulator)
+            c.storageMode = .private
+            #else
+            c.storageMode = .memoryless
+            #endif
+            msaaTexture = device.makeTexture(descriptor: c)
+            if msaaTexture == nil {
+                c.storageMode = .private
+                msaaTexture = device.makeTexture(descriptor: c)
+            }
+        }
     }
 
     /// Draws one frame at `time` (seconds).
     func render(time: TimeInterval) {
         let size = metalLayer.drawableSize
         guard size.width > 0, size.height > 0, let drawable = metalLayer.nextDrawable() else { return }
-        ensureDepth(size)
+        ensureTargets(size)
         let pass = MTLRenderPassDescriptor()
-        pass.colorAttachments[0].texture = drawable.texture
+        if let msaa = msaaTexture {
+            pass.colorAttachments[0].texture = msaa
+            pass.colorAttachments[0].resolveTexture = drawable.texture
+            pass.colorAttachments[0].storeAction = .multisampleResolve
+        } else {
+            pass.colorAttachments[0].texture = drawable.texture
+            pass.colorAttachments[0].storeAction = .store
+        }
         pass.colorAttachments[0].loadAction = .clear
-        pass.colorAttachments[0].storeAction = .store
         pass.colorAttachments[0].clearColor = clearColor
         pass.depthAttachment.texture = depthTexture
         pass.depthAttachment.loadAction = .clear

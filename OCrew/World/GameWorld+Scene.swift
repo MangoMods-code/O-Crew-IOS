@@ -100,6 +100,22 @@ extension GameWorld {
         strip(SIMD2(W - 0.012, pz2 - 0.42), SIMD2(W - 0.012, pz2 + 0.42), 1.16, 2.28,
               Mats.picture(Mats.poster(posters[1].0, posters[1].1, bg: posters[1].2, fg: posters[1].3), lit: true))
 
+        // ---- Aisle end caps: a numbered promo panel on both ends of every middle aisle
+        var aisleEnds: [Float: (Float, Float)] = [:]
+        for spec in layout.fixtures where spec.normal.x < -0.5 && spec.center.x > 1.2 && spec.center.x < W - 1.2 {
+            let cx = spec.center.x + 0.25
+            let z0 = spec.center.y - spec.length / 2, z1 = spec.center.y + spec.length / 2
+            if let e = aisleEnds[cx] { aisleEnds[cx] = (min(e.0, z0), max(e.1, z1)) } else { aisleEnds[cx] = (z0, z1) }
+        }
+        let capLines = ["tidy shelves,\nhappy shoppers", "everything in\nits place", "read the signs,\nfill the rows"]
+        for (n, cx) in aisleEnds.keys.sorted().enumerated() {
+            guard let e = aisleEnds[cx] else { continue }
+            let art = Mats.picture(Mats.poster("AISLE\n\(n + 1)", capLines[n % capLines.count], bg: theme.trim, fg: 0xFFFFFF), lit: true)
+            let x0: Float = cx - 0.44, x1: Float = cx + 0.44
+            strip(SIMD2(x0, e.1 + 0.012), SIMD2(x1, e.1 + 0.012), 0.38, 1.58, art)
+            strip(SIMD2(x1, e.0 - 0.012), SIMD2(x0, e.0 - 0.012), 0.38, 1.58, art)
+        }
+
         // ---- Store name across the back wall
         let nameW = min(W - 1.6, 4.4)
         let nameMat = Mats.picture(Mats.label(theme.name.uppercased(), size: CGSize(width: 1100, height: 100), font: 70,

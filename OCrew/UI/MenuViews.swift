@@ -126,7 +126,7 @@ struct MainMenuView: View {
                 Button { go(.locker) } label: { Label("Locker & stats", systemImage: "tshirt.fill").frame(width: 250) }
                     .buttonStyle(BrandButtonStyle(filled: false))
                 HStack(spacing: 10) {
-                    Button { go(.help) } label: { Label("How to play", systemImage: "questionmark.circle.fill").frame(width: 106) }
+                    Button { go(.help) } label: { Label("Help", systemImage: "questionmark.circle.fill").frame(width: 106) }
                         .buttonStyle(BrandButtonStyle(filled: false))
                     Button { go(.settings) } label: { Label("Settings", systemImage: "gearshape.fill").frame(width: 106) }
                         .buttonStyle(BrandButtonStyle(filled: false))

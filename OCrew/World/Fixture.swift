@@ -276,7 +276,6 @@ final class Fixture {
         let plane = SCNPlane(width: CGFloat(w), height: CGFloat(h))
         let m = SCNMaterial()
         m.lightingModel = .constant
-        m.isDoubleSided = true
         m.diffuse.mipFilter = .linear
         m.diffuse.contents = Models.sectionSign(seen, done: done, total: slots.count, lit: lit)
         plane.firstMaterial = m
@@ -284,6 +283,19 @@ final class Fixture {
         n.categoryBitMask = Models.categoryNoHit
         n.castsShadow = false
         signNode.addChildNode(n)
+        // Plain dark back, so the sign never shows mirrored text from behind.
+        let backPlane = SCNPlane(width: CGFloat(w), height: CGFloat(h))
+        backPlane.cornerRadius = CGFloat(h * 0.16)
+        let bm = SCNMaterial()
+        bm.lightingModel = .constant
+        bm.diffuse.contents = UIColor(hex: 0x161C26)
+        backPlane.firstMaterial = bm
+        let backNode = SCNNode(geometry: backPlane)
+        backNode.eulerAngles = SCNVector3(Float(0), Float.pi, Float(0))
+        backNode.position = SCNVector3(0, 0, -0.004)
+        backNode.categoryBitMask = Models.categoryNoHit
+        backNode.castsShadow = false
+        signNode.addChildNode(backNode)
         for x in [-w / 2 + 0.12, w / 2 - 0.12] {
             let wire = Models.box(0.012, 0.5, 0.012, 0x8A8F96)
             wire.categoryBitMask = Models.categoryNoHit

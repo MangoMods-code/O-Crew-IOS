@@ -40,11 +40,17 @@ extension GameWorld {
         switch pose {
         case 1:
             debugFill(0.6)
-            debugLook(x: W / 2, z: D * 0.6, yaw: 0, pitch: -0.05)
+            // Stand in an aisle, facing a middle shelf (or the back wall when there are no aisles).
+            if let f = layout.fixtures.first(where: { $0.normal.x < -0.5 && $0.center.x > 1.2 && $0.center.x < W - 1.2 }) {
+                let p = f.center + f.normal * 1.9
+                debugLook(x: p.x, z: p.y, yaw: atan2(f.normal.x, f.normal.y), pitch: -0.05)
+            } else {
+                debugLook(x: W / 2, z: 2.6, yaw: 0, pitch: -0.05)
+            }
         case 2:
             debugFill(0.3)
             for it in floorItems.values.sorted(by: { $0.id < $1.id }).prefix(9) { pickUp(it.id) }
-            debugLook(x: W / 2, z: D * 0.5, yaw: 0.4, pitch: -0.85)
+            debugLook(x: W / 2 + 0.3, z: D - 2.2, yaw: 0.4, pitch: -0.85)
         case 3:
             debugFill(0.8)
             debugLook(x: min(W - 1, 3.4), z: D * 0.4, yaw: Float.pi / 2, pitch: 0)

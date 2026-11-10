@@ -185,9 +185,12 @@ final class GameWorld {
         }
 
         if let s = save, s.fixtureCount == fixtures.count, s.layoutVersion == LevelSave.currentLayout, restore(s) {
-            // restored
+            // restored exactly
         } else {
             generateMess()
+            // The store changed since this save (an update, or different game rules):
+            // keep the time, score and everything that was already shelved correctly.
+            if let s = save, s.isUsable { carryOver(s) }
         }
         tutorialActive = level.index == 0 && game.showTutorial && !ProgressStore.shared.data.seenTutorial && save == nil
         rebuildChunks()
@@ -375,13 +378,21 @@ final class GameWorld {
         for it in basket { saves.append(ItemSave(product: it.product, expired: it.expired, loc: 1)) }
         for f in fixtures {
             for s in f.slots {
-                for it in s.items { saves.append(ItemSave(product: it.product, expired: it.expired, loc: 2, f: f.index, s: s.index)) }
+                let ok = s.isCorrect
+                for it in s.items { saves.append(ItemSave(product: it.product, expired: it.expired, loc: 2, f: f.index, s: s.index, ok: ok)) }
             }
         }
         var save = LevelSave(levelID: level.id, elapsed: elapsed, mistakes: mistakes, binned: binned,
                              total: total, fixtureCount: fixtures.count, items: saves)
         save.score = score
         save.bestStreak = bestStreak
+        save.px = playerPos.x
+        save.pz = playerPos.y
+        save.yaw = targetYaw
+        save.pitch = targetPitch
+        save.streak = comboFraction > 0 ? streak : 0
+        save.selected = selectedKey
+        save.cooldowns = skills.cooldownsLeft(now: time)
         ProgressStore.shared.store(save)
     }
 
@@ -415,13 +426,68 @@ final class GameWorld {
             }
         }
         selectedKey = basket.first?.key
-        score = s.score ?? 0
-        bestStreak = s.bestStreak ?? 0
+        if let sel = s.selected, basket.contains(where: { $0.key == sel }) { selectedKey = sel }
+        restoreRun(s)
+        if let x = s.px, let z = s.pz, layout.isOpen(SIMD2(x, z), clearance: 0.2) {
+            playerPos = SIMD2(x, z)
+            yaw = s.yaw ?? yaw
+            targetYaw = yaw
+            pitch = max(-1.35, min(1.35, s.pitch ?? pitch))
+            targetPitch = pitch
+            playerNode.simdPosition = SIMD3(x, 0, z)
+            playerNode.simdEulerAngles = SIMD3(0, yaw, 0)
+            cameraNode.simdEulerAngles = SIMD3(pitch, 0, 0)
+        }
         for cat in Set(fixtures.flatMap { $0.slots }.compactMap { $0.category }) where sectionDone(cat) {
             completedSections.insert(cat)
         }
         refreshSigns()
         return true
+    }
+
+    /// Clock, score, combo and cooldowns from a save.
+    private func restoreRun(_ s: LevelSave) {
+        elapsed = s.elapsed
+        mistakes = s.mistakes
+        score = s.score ?? 0
+        bestStreak = s.bestStreak ?? 0
+        streak = s.streak ?? 0
+        if streak > 0 { lastCorrectAt = time }   // a fresh combo window to pick it back up
+        if let c = s.cooldowns { skills.restore(c, now: time) }
+    }
+
+    /// Applies an older save to a freshly generated mess: whatever was already sorted stays sorted.
+    private func carryOver(_ s: LevelSave) {
+        var shelved: [String: Int] = [:]
+        for sv in s.items where sv.loc == 2 && sv.ok == true && !sv.expired { shelved[sv.product, default: 0] += 1 }
+        var toBin = s.binned
+        var touched: Set<ObjectIdentifier> = []
+        for it in floorItems.values.sorted(by: { $0.id < $1.id }) {
+            if it.expired {
+                guard toBin > 0 else { continue }
+                toBin -= 1
+                removeFromFloor(it)
+                items[it.id] = nil
+                binned += 1
+                continue
+            }
+            guard let left = shelved[it.product], left > 0, let slot = correctSlot(for: it) else { continue }
+            shelved[it.product] = left - 1
+            removeFromFloor(it)
+            slot.items.append(it)
+            touched.insert(ObjectIdentifier(slot))
+        }
+        for f in fixtures {
+            for slot in f.slots where touched.contains(ObjectIdentifier(slot)) {
+                slot.rebuild()
+                slot.refreshTag(visible: display.showShelfTags)
+            }
+        }
+        restoreRun(s)
+        for cat in Set(fixtures.flatMap { $0.slots }.compactMap { $0.category }) where sectionDone(cat) {
+            completedSections.insert(cat)
+        }
+        refreshSigns()
     }
 
     // MARK: Per-frame

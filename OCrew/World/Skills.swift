@@ -88,4 +88,19 @@ struct SkillSet {
     }
 
     mutating func reset() { states = [:] }
+
+    /// Seconds left on each cooldown, for saving.
+    func cooldownsLeft(now: Double) -> [String: Double] {
+        var out: [String: Double] = [:]
+        for (id, st) in states where st.readyAt > now { out[id.rawValue] = st.readyAt - now }
+        return out
+    }
+
+    /// Puts saved cooldowns back (active effects are not resumed).
+    mutating func restore(_ left: [String: Double], now: Double) {
+        for (key, seconds) in left {
+            guard let id = SkillID(rawValue: key), seconds > 0 else { continue }
+            states[id] = SkillState(readyAt: now + seconds, activeUntil: 0)
+        }
+    }
 }

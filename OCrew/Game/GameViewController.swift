@@ -140,6 +140,7 @@ final class GameViewController: UIViewController {
                 // Leaving the app (or pulling down notifications) pauses instead of letting the clock run.
                 guard let self = self, self.world != nil else { return }
                 if !self.overlayOpen && !self.world.completed && !DebugShot.active { self.openPause() } else { self.world.snapshot() }
+                ProgressStore.shared.flush()
             }
             .store(in: &cancellables)
 
@@ -228,7 +229,7 @@ final class GameViewController: UIViewController {
                 lastRepeat = world.time
                 world.interact(f)
             }
-            if world.time - lastSave > 45 {
+            if world.time - lastSave > 6 {
                 lastSave = world.time
                 world.snapshot()
             }

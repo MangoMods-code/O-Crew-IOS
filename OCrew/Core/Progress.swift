@@ -1,7 +1,7 @@
 import Foundation
 
 /// Where one item is when a level is saved mid-way.
-struct ItemSave: Codable {
+struct ItemSave: Codable, Sendable {
     var product: String
     var expired: Bool
     var loc: Int            // 0 floor, 1 basket, 2 slot
@@ -11,9 +11,11 @@ struct ItemSave: Codable {
     var z: Float = 0
     var yaw: Float = 0
     var tipped: Bool = false
+    /// Shelved in a correct spot (lets a save survive a store layout change).
+    var ok: Bool?
 }
 
-struct LevelSave: Codable {
+struct LevelSave: Codable, Sendable {
     /// Bumped whenever store layouts change, so an old save never restores into the wrong shelves.
     static let currentLayout = 2
 
@@ -27,6 +29,17 @@ struct LevelSave: Codable {
     var score: Int?
     var bestStreak: Int?
     var layoutVersion: Int? = LevelSave.currentLayout
+    // Where the player was standing and looking, and what they had going.
+    var px: Float?
+    var pz: Float?
+    var yaw: Float?
+    var pitch: Float?
+    var streak: Int?
+    var selected: String?
+    var cooldowns: [String: Double]?
+
+    /// Old saves made before layouts were versioned can't be carried over.
+    var isUsable: Bool { layoutVersion == LevelSave.currentLayout || items.contains { $0.ok != nil } }
 }
 
 struct LevelResult {
@@ -48,7 +61,7 @@ struct LevelResult {
     let next: OrgLevel?
 }
 
-struct ProgressData: Codable {
+struct ProgressData: Codable, Sendable {
     var unlocked: Int = 1                 // number of levels unlocked, in campaign order
     var stars: [String: Int] = [:]
     var bestTime: [String: Double] = [:]
@@ -111,9 +124,9 @@ final class ProgressStore: ObservableObject {
     func bestScore(_ id: String) -> Int? { data.bestScore[id] }
     var totalStars: Int { data.stars.values.reduce(0, +) }
 
-    /// A saved, unfinished run of this level (only if it matches the current store layouts).
+    /// A saved, unfinished run of this level.
     func save(for id: String) -> LevelSave? {
-        guard let s = data.saves[id], s.layoutVersion == LevelSave.currentLayout else { return nil }
+        guard let s = data.saves[id], s.isUsable else { return nil }
         return s
     }
 
@@ -169,10 +182,18 @@ final class ProgressStore: ObservableObject {
 
     private let ioQueue = DispatchQueue(label: "ocrew.progress.io", qos: .utility)
 
-    /// Encodes on the main thread (fast) and writes to disk in the background (never hitches).
+    /// Encodes and writes in the background, in order, so saving often never hitches the game.
     private func persist() {
-        guard let d = try? JSONEncoder().encode(data) else { return }
+        let snapshot = data
         let target = url
-        ioQueue.async { try? d.write(to: target, options: .atomic) }
+        ioQueue.async {
+            guard let d = try? JSONEncoder().encode(snapshot) else { return }
+            try? d.write(to: target, options: .atomic)
+        }
+    }
+
+    /// Waits until everything saved so far is on disk (call when the app is about to be suspended).
+    func flush() {
+        ioQueue.sync { }
     }
 }

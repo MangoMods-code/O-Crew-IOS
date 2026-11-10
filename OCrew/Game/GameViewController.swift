@@ -144,6 +144,7 @@ final class GameViewController: UIViewController {
         })
         lastTimestamp = 0
         hud.showToast("\(level.title) — \(level.stageName). Put every item back where it belongs!", style: .info)
+        if DebugShot.level != nil { world.debugStage(DebugShot.pose) }
     }
 
     override func viewDidAppear(_ animated: Bool) {

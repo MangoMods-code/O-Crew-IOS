@@ -53,7 +53,11 @@ final class MetalSceneView: UIView {
         let d = MTLTextureDescriptor.texture2DDescriptor(pixelFormat: .depth32Float_stencil8,
                                                          width: Int(size.width), height: Int(size.height), mipmapped: false)
         d.usage = .renderTarget
+        #if targetEnvironment(simulator)
+        d.storageMode = .private
+        #else
         d.storageMode = .memoryless
+        #endif
         depthTexture = device.makeTexture(descriptor: d)
         if depthTexture == nil {
             d.storageMode = .private

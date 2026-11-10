@@ -47,9 +47,18 @@ struct Logo: View {
 struct MainMenuView: View {
     let onPlay: (OrgLevel) -> Void
     @ObservedObject private var progress = ProgressStore.shared
-    @State private var page: Page = .home
+    @State private var page: Page = MainMenuView.initialPage
 
     enum Page { case home, stores, settings, help }
+
+    private static var initialPage: Page {
+        switch DebugShot.screen {
+        case "levels": return .stores
+        case "settings": return .settings
+        case "help": return .help
+        default: return .home
+        }
+    }
 
     var body: some View {
         ZStack {

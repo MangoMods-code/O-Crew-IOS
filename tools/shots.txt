@@ -1,0 +1,10 @@
+menu 25
+levels 8 -screen levels
+start 14 -shot grocery-1 -pose 0
+shelves 10 -shot grocery-1 -pose 1
+basket 10 -shot grocery-1 -pose 2
+fridges 10 -shot grocery-1 -pose 3
+complete 12 -shot grocery-1 -pose 4
+front 10 -shot grocery-1 -pose 5
+closeup 10 -shot grocery-1 -pose 6
+supermarket 14 -shot supermarket-3 -pose 1
